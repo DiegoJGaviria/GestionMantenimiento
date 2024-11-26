@@ -1,10 +1,12 @@
 {
-  "name": "gestion-mantenimiento",
+  "name": "sistema-gestion-mantenimiento",
   "version": "1.0.0",
-  "description": "Sistema de Gestión de Mantenimiento de Computadoras",
+  "description": "Sistema de Gestión de Mantenimiento",
+  "main": "index.js",
   "scripts": {
-    "start": "npx http-server src/pages -p 8000"
+    "start": "http-server src -p 4000"
   },
+  "keywords": ["mantenimiento", "gestion"],
   "author": "",
   "license": "ISC",
   "devDependencies": {
