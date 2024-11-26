@@ -1,0 +1,119 @@
+<?php
+include 'config.php';
+checkLogin();
+
+$error = $success = "";
+
+if ($_SERVER["REQUEST_METHOD"] == "POST") {
+    $id_cliente = $conn->real_escape_string($_POST['id_cliente']);
+    $marca = $conn->real_escape_string($_POST['marca']);
+    $modelo = $conn->real_escape_string($_POST['modelo']);
+    $numero_serial = $conn->real_escape_string($_POST['numero_serial']);
+
+    $sql = "INSERT INTO Equipos (id_cliente, marca, modelo, numero_serial, fecha_registro) 
+            VALUES ('$id_cliente', '$marca', '$modelo', '$numero_serial', CURDATE())";
+
+    if ($conn->query($sql) === TRUE) {
+        $success = "Nuevo equipo agregado con éxito";
+    } else {
+        $error = "Error: " . $sql . "<br>" . $conn->error;
+    }
+}
+
+$sql = "SELECT e.*, c.nombre_cliente FROM Equipos e JOIN Clientes c ON e.id_cliente = c.id_cliente";
+$result = $conn->query($sql);
+
+$sql_clientes = "SELECT id_cliente, nombre_cliente FROM Clientes";
+$result_clientes = $conn->query($sql_clientes);
+?>
+
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Gestión de Equipos</title>
+    <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+    <header>
+        <div class="container">
+            <div id="branding">
+                <h1><span class="highlight">Gestión</span> Mantenimiento</h1>
+            </div>
+            <nav>
+                <ul>
+                    <li><a href="index.php">Inicio</a></li>
+                    <li><a href="clientes.php">Clientes</a></li>
+                    <li class="current"><a href="equipos.php">Equipos</a></li>
+                    <li><a href="diagnosticos.php">Diagnósticos</a></li>
+                    <li><a href="facturas.php">Facturas</a></li>
+                    <li><a href="logout.php">Cerrar Sesión</a></li>
+                </ul>
+            </nav>
+        </div>
+    </header>
+
+    <div class="container">
+        <h2>Gestión de Equipos</h2>
+        
+        <?php if($error != ""): ?>
+            <div class="error"><?php echo $error; ?></div>
+        <?php endif; ?>
+        <?php if($success != ""): ?>
+            <div class="success"><?php echo $success; ?></div>
+        <?php endif; ?>
+
+        <form method="post" action="<?php echo htmlspecialchars($_SERVER["PHP_SELF"]);?>">
+            <select name="id_cliente" required>
+                <option value="">Seleccione un cliente</option>
+                <?php
+                if ($result_clientes->num_rows > 0) {
+                    while($row = $result_clientes->fetch_assoc()) {
+                        echo "<option value='".$row["id_cliente"]."'>".$row["nombre_cliente"]."</option>";
+                    }
+                }
+                ?>
+            </select>
+            <input type="text" name="marca" placeholder="Marca" required>
+            <input type="text" name="modelo" placeholder="Modelo" required>
+            <input type="text" name="numero_serial" placeholder="Número Serial" required>
+            <input type="submit" value="Agregar Equipo" class="btn">
+        </form>
+
+        <h3>Lista de Equipos</h3>
+        <table>
+            <tr>
+                <th>ID</th>
+                <th>Cliente</th>
+                <th>Marca</th>
+                <th>Modelo</th>
+                <th>Número Serial</th>
+                <th>Fecha Registro</th>
+            </tr>
+            <?php
+            if ($result->num_rows > 0) {
+                while($row = $result->fetch_assoc()) {
+                    echo "<tr>
+                            <td>".$row["id_equipo"]."</td>
+                            <td>".$row["nombre_cliente"]."</td>
+                            <td>".$row["marca"]."</td>
+                            <td>".$row["modelo"]."</td>
+                            <td>".$row["numero_serial"]."</td>
+                            <td>".$row["fecha_registro"]."</td>
+                          </tr>";
+                }
+            } else {
+                echo "<tr><td colspan='6'>No hay equipos registrados</td></tr>";
+            }
+            ?>
+        </table>
+    </div>
+
+    <footer>
+        <p>&copy; 2024 Sistema de Gestión de Man
+tenimiento</p>
+    </footer>
+</body>
+</html>
+
