@@ -1,0 +1,1 @@
+SELECT * FROM sistema_arreglo_computadores.cliente;
