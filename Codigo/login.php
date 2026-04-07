@@ -18,7 +18,7 @@ if ($_SERVER["REQUEST_METHOD"] === "POST") {
     if ($correo === '' || $password === '') {
         $error = 'Ingrese correo y contraseña.';
     } else {
-        $stmt = $conn->prepare("SELECT idUsuario, Primer_Nombre, Primer_Apellido, `Contraseña` FROM Usuario WHERE Correo = ? LIMIT 1");
+        $stmt = $conn->prepare("SELECT u.idUsuario, u.Primer_Nombre, u.Primer_Apellido, u.`Contraseña`, u.Rol_idRol, r.Nombre_Rol FROM Usuario u LEFT JOIN Rol r ON u.Rol_idRol = r.idRol WHERE u.Correo = ? LIMIT 1");
         if ($stmt) {
             $stmt->bind_param('s', $correo);
             $stmt->execute();
@@ -30,6 +30,8 @@ if ($_SERVER["REQUEST_METHOD"] === "POST") {
                 if (password_verify($password, $storedPassword) || $storedPassword === $password) {
                     $_SESSION['usuario'] = $fila['Primer_Nombre'] . ' ' . $fila['Primer_Apellido'];
                     $_SESSION['idUsuario'] = $fila['idUsuario'];
+                    $_SESSION['idRol'] = $fila['Rol_idRol'];
+                    $_SESSION['rol_nombre'] = $fila['Nombre_Rol'] ?: 'Usuario';
                     header("Location: index.php");
                     exit();
                 } else {
@@ -60,9 +62,10 @@ if ($_SERVER["REQUEST_METHOD"] === "POST") {
 <body class="bg-light">
     <div class="container py-5">
         <div class="row justify-content-center">
-            <div class="col-md-5">
+            <div class="col-12 col-sm-10 col-md-8 col-lg-6 col-xl-4">
                 <div class="card shadow-sm">
-                    <div class="card-body">
+                    <div class="card-body p-4 p-md-5">
+                        <h2 class="card-title text-center mb-4">Iniciar Sesión</h2>
                         <h2 class="card-title text-center mb-4">Iniciar Sesión</h2>
                         <?php if ($error): ?>
                             <div class="alert alert-danger"><?php echo htmlspecialchars($error); ?></div>

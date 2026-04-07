@@ -1,8 +1,15 @@
 <?php
 // usuario_crud.php
 
+include('auth.php');
+
 // Conexión a la base de datos
 include("conexion.php");
+
+if (!isset($_SESSION['rol_nombre']) || $_SESSION['rol_nombre'] !== 'Administrador') {
+    header('Location: index.php');
+    exit();
+}
 
 // Función para obtener todos los usuarios
 function obtenerUsuarios($conn)

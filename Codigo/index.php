@@ -1,5 +1,8 @@
 <?php
+session_start();
 include("conexion.php");
+
+$isAdmin = isset($_SESSION['rol_nombre']) && $_SESSION['rol_nombre'] === 'Administrador';
 
 // Contadores para el dashboard
 $total_clientes = $conn->query("SELECT COUNT(*) as total FROM Cliente")->fetch_assoc()['total'];
@@ -23,7 +26,7 @@ $valor_total = $conn->query("SELECT COALESCE(SUM(Valor_Pago), 0) as total FROM A
 <html lang="es">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=5.0">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Dashboard - TechRepair System</title>
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.1.3/dist/css/bootstrap.min.css" rel="stylesheet">
     <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css" rel="stylesheet">
@@ -43,35 +46,37 @@ $valor_total = $conn->query("SELECT COALESCE(SUM(Valor_Pago), 0) as total FROM A
 
         <!-- Tarjetas de estadisticas -->
         <div class="row g-3 mb-4">
-            <div class="col-6 col-md-4 col-xl">
+            <div class="col-12 col-sm-6 col-md-4 col-xl">
                 <div class="stat-card bg-clientes">
                     <i class="bi bi-person-lines-fill stat-icon"></i>
                     <div class="stat-number"><?php echo $total_clientes; ?></div>
                     <div class="stat-label">Clientes</div>
                 </div>
             </div>
-            <div class="col-6 col-md-4 col-xl">
+            <div class="col-12 col-sm-6 col-md-4 col-xl">
                 <div class="stat-card bg-arreglos">
                     <i class="bi bi-tools stat-icon"></i>
                     <div class="stat-number"><?php echo $total_arreglos; ?></div>
                     <div class="stat-label">Arreglos</div>
                 </div>
             </div>
-            <div class="col-6 col-md-4 col-xl">
+            <div class="col-12 col-sm-6 col-md-4 col-xl">
                 <div class="stat-card bg-diagnosticos">
                     <i class="bi bi-clipboard2-pulse-fill stat-icon"></i>
                     <div class="stat-number"><?php echo $total_diagnosticos; ?></div>
                     <div class="stat-label">Diagnosticos</div>
                 </div>
             </div>
-            <div class="col-6 col-md-6 col-xl">
+            <?php if ($isAdmin): ?>
+            <div class="col-12 col-sm-6 col-md-4 col-xl">
                 <div class="stat-card bg-usuarios">
                     <i class="bi bi-people-fill stat-icon"></i>
                     <div class="stat-number"><?php echo $total_usuarios; ?></div>
                     <div class="stat-label">Usuarios</div>
                 </div>
             </div>
-            <div class="col-12 col-md-6 col-xl">
+            <?php endif; ?>
+            <div class="col-12 col-sm-6 col-md-4 col-xl">
                 <div class="stat-card bg-marcas">
                     <i class="bi bi-tags-fill stat-icon"></i>
                     <div class="stat-number"><?php echo $total_marcas; ?></div>
@@ -142,6 +147,7 @@ $valor_total = $conn->query("SELECT COALESCE(SUM(Valor_Pago), 0) as total FROM A
 
             <!-- Sidebar derecho -->
             <div class="col-12 col-lg-4">
+                <?php if ($isAdmin): ?>
                 <!-- Resumen financiero -->
                 <div class="card-custom mb-3">
                     <div class="card-header">
@@ -149,13 +155,14 @@ $valor_total = $conn->query("SELECT COALESCE(SUM(Valor_Pago), 0) as total FROM A
                     </div>
                     <div class="card-body text-center" style="padding: 1.5rem;">
                         <div style="font-size: 1.75rem; font-weight: 900; color: var(--color-success); background: var(--color-success-light); display: inline-block; padding: 0.5rem 1.25rem; border-radius: var(--radius-lg);">
-                            $<?php echo number_format($valor_total, 0, ',', '.'); ?>
+                            $ <?php echo number_format($valor_total, 0, ',', '.'); ?>
                         </div>
                         <div style="color: var(--color-text-muted); font-size: 0.82rem; margin-top: 0.5rem; font-weight: 500;">
-                            Total acumulado en arreglos
+                            Valor total en arreglos
                         </div>
                     </div>
                 </div>
+                <?php endif; ?>
 
                 <!-- Accesos rapidos -->
                 <div class="card-custom">
@@ -164,25 +171,25 @@ $valor_total = $conn->query("SELECT COALESCE(SUM(Valor_Pago), 0) as total FROM A
                     </div>
                     <div class="card-body">
                         <div class="row g-2">
-                            <div class="col-6">
+                            <div class="col-12 col-sm-6">
                                 <a href="arreglo.php" class="quick-access-card">
                                     <i class="bi bi-plus-circle-fill"></i>
                                     <span>Nuevo Arreglo</span>
                                 </a>
                             </div>
-                            <div class="col-6">
+                            <div class="col-12 col-sm-6">
                                 <a href="cliente.php" class="quick-access-card">
                                     <i class="bi bi-person-plus-fill"></i>
                                     <span>Nuevo Cliente</span>
                                 </a>
                             </div>
-                            <div class="col-6">
+                            <div class="col-12 col-sm-6">
                                 <a href="diagnostico.php" class="quick-access-card">
                                     <i class="bi bi-clipboard-plus-fill"></i>
                                     <span>Diagnostico</span>
                                 </a>
                             </div>
-                            <div class="col-6">
+                            <div class="col-12 col-sm-6">
                                 <a href="marca.php" class="quick-access-card">
                                     <i class="bi bi-tag-fill"></i>
                                     <span>Nueva Marca</span>

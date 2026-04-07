@@ -154,7 +154,7 @@ $arreglos = obtenerArreglos($conn);
                             <tr>
                                 <td><?php echo $diagnostico['idDiagnostico']; ?></td>
                                 <td><?php echo $diagnostico['Componente']; ?></td>
-                                <td><?php echo $diagnostico['Valor']; ?></td>
+                                <td><?php echo '$ ' . number_format($diagnostico['Valor'], 0); ?></td>
                                 <td><?php echo $diagnostico['Descripcion']; ?></td>
                                 <td>
                                     <button type="button" class="btn btn-sm btn-warning" data-bs-toggle="modal" data-bs-target="#editarDiagnosticoModal<?php echo $diagnostico['idDiagnostico']; ?>">
@@ -347,29 +347,6 @@ $arreglos = obtenerArreglos($conn);
             <?php foreach ($diagnosticos as $diagnostico): ?>
             actualizarDetallesJSON('<?php echo $diagnostico['idDiagnostico']; ?>');
             <?php endforeach; ?>
-        });
-
-        // Manejar la sumisión de los formularios de edición
-        document.querySelectorAll('form[id^="editarDiagnosticoForm"]').forEach(form => {
-            form.addEventListener('submit', function(e) {
-                e.preventDefault();
-                const formData = new FormData(this);
-                fetch('', {
-                    method: 'POST',
-                    body: formData
-                })
-                .then(response => response.text())
-                .then(data => {
-                    // Manejar la respuesta, actualizar la página o mostrar un mensaje
-                    console.log(data);
-                    // Cerrar el modal
-                    const modal = bootstrap.Modal.getInstance(this.closest('.modal'));
-                    modal.hide();
-                    // Opcionalmente, actualizar la tabla o recargar la página
-                    location.reload();
-                })
-                .catch(error => console.error('Error:', error));
-            });
         });
     </script>
 </body>

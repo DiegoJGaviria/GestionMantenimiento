@@ -12,9 +12,11 @@
         <li class="nav-item">
           <a class="nav-link" href="index.php">Inicio</a>
         </li>
+        <?php if (isset($_SESSION['rol_nombre']) && $_SESSION['rol_nombre'] === 'Administrador'): ?>
         <li class="nav-item">
           <a class="nav-link" href="usuarios.php">Usuarios</a>
         </li>
+        <?php endif; ?>
         <li class="nav-item">
           <a class="nav-link" href="marca.php">Marcas</a>
         </li>
@@ -27,9 +29,21 @@
         <li class="nav-item">
           <a class="nav-link" href="diagnostico.php">Diagnostico</a>
         </li>
+      </ul>
+      <ul class="navbar-nav ms-auto">
         <?php if (isset($_SESSION['usuario'])): ?>
-        <li class="nav-item">
-          <a class="nav-link" href="logout.php">Cerrar sesión</a>
+        <li class="nav-item dropdown">
+          <a class="nav-link dropdown-toggle d-flex align-items-center" href="#" id="profileDropdown" role="button" data-bs-toggle="dropdown" aria-expanded="false">
+            <i class="bi bi-person-circle me-1"></i>
+            <?php echo htmlspecialchars($_SESSION['usuario']); ?>
+          </a>
+          <ul class="dropdown-menu dropdown-menu-end" aria-labelledby="profileDropdown">
+            <li><span class="dropdown-item-text">Rol: <?php echo htmlspecialchars($_SESSION['rol_nombre'] ?? 'Usuario'); ?></span></li>
+            <?php if (isset($_SESSION['rol_nombre']) && $_SESSION['rol_nombre'] === 'Administrador'): ?>
+            <li><a class="dropdown-item" href="usuarios.php">Administrar usuarios</a></li>
+            <?php endif; ?>
+            <li><a class="dropdown-item" href="logout.php">Cerrar sesión</a></li>
+          </ul>
         </li>
         <?php endif; ?>
       </ul>

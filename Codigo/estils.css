@@ -60,6 +60,30 @@ body {
   flex-direction: column;
 }
 
+/* --- Scrollbar personalizada --- */
+::-webkit-scrollbar {
+  width: 12px;
+}
+
+::-webkit-scrollbar-track {
+  background: var(--color-bg);
+}
+
+::-webkit-scrollbar-thumb {
+  background: var(--color-primary);
+  border-radius: 6px;
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background: var(--color-primary-dark);
+}
+
+/* Para Firefox */
+html {
+  scrollbar-color: var(--color-primary) var(--color-bg);
+  scrollbar-width: none;
+}
+
 /* --- Navbar personalizada --- */
 .navbar-custom {
   background: linear-gradient(135deg, #0f172a 0%, #1e3a5f 50%, #0f172a 100%);
@@ -82,9 +106,7 @@ body {
   white-space: nowrap;
 }
 
-.navbar-custom .navbar-brand:hover {
-  color: var(--color-accent);
-}
+
 
 .navbar-custom .navbar-brand i {
   font-size: 1.3rem;
@@ -160,7 +182,7 @@ body {
 .main-container {
   padding: 1.25rem;
   max-width: 1400px;
-  margin: 0 auto;
+  margin: 1.5rem auto 0 auto;
   width: 100%;
   flex: 1;
 }
@@ -577,6 +599,7 @@ body {
     transform: translateX(100%);
     opacity: 0;
   }
+
   to {
     transform: translateX(0);
     opacity: 1;
@@ -587,6 +610,7 @@ body {
   from {
     opacity: 1;
   }
+
   to {
     opacity: 0;
     transform: translateX(50px);
@@ -782,7 +806,13 @@ body {
 /* --- 576px y menor (celulares) --- */
 @media (max-width: 575.98px) {
   .main-container {
-    padding: 0.75rem;
+    padding: 1rem 1rem;
+    margin-top: 1rem;
+  }
+
+  .container {
+    padding-left: 1rem;
+    padding-right: 1rem;
   }
 
   .page-header {
@@ -878,7 +908,7 @@ body {
     padding: 1rem;
   }
 
-  .modal-body .row > [class*="col-md"] {
+  .modal-body .row>[class*="col-md"] {
     margin-bottom: 0;
   }
 
@@ -913,6 +943,30 @@ body {
 
   .navbar-custom .nav-link.active {
     margin: 2px 0;
+  }
+
+  /* Dropdown en mobile */
+  .navbar-custom .dropdown-menu {
+    position: static;
+    float: none;
+    width: 100%;
+    margin-top: 0.5rem;
+    border: none;
+    background: rgba(255, 255, 255, 0.95);
+    backdrop-filter: blur(10px);
+    box-shadow: 0 4px 20px rgba(0, 0, 0, 0.15);
+  }
+
+  .navbar-custom .dropdown-item {
+    color: var(--color-secondary);
+    padding: 0.6rem 1rem;
+    border-radius: var(--radius);
+    margin: 2px 0.5rem;
+  }
+
+  .navbar-custom .dropdown-item:hover {
+    background: var(--color-primary-light);
+    color: var(--color-primary);
   }
 
   /* Quick access en mobile */
@@ -1000,13 +1054,188 @@ body {
     padding: 1rem;
   }
 
+  /* Navbar dropdown en tablets */
+  .navbar-custom .dropdown-menu {
+    min-width: 200px;
+  }
+
+  .navbar-custom .dropdown-item {
+    padding: 0.6rem 0.8rem;
+    font-size: 0.9rem;
+  }
+}
+
+/* --- 768px a 991px (tablets) --- */
+@media (min-width: 768px) and (max-width: 991.98px) {
+  .main-container {
+    padding: 1.25rem;
+  }
+
+  .page-header h2 {
+    font-size: 1.25rem;
+  }
+
   .stat-card .stat-number {
     font-size: 1.5rem;
   }
 
-  .modal-dialog {
-    max-width: 500px;
+  .stat-card .stat-icon {
+    font-size: 1.8rem;
   }
+
+  /* Navbar en tablets */
+  .navbar-custom .navbar-brand {
+    font-size: 1rem;
+  }
+
+  .navbar-custom .nav-link {
+    font-size: 0.85rem;
+    padding: 0.45rem 0.7rem;
+  }
+
+  /* Quick access en 2 columnas */
+  .quick-access-card {
+    padding: 1rem 0.6rem;
+  }
+
+  .quick-access-card i {
+    font-size: 1.5rem;
+  }
+
+  .quick-access-card span {
+    font-size: 0.78rem;
+  }
+}
+
+/* --- 992px a 1199px (desktops pequeños) --- */
+@media (min-width: 992px) and (max-width: 1199.98px) {
+  .main-container {
+    padding: 1.5rem;
+  }
+
+  .page-header h2 {
+    font-size: 1.3rem;
+  }
+
+  .stat-card .stat-number {
+    font-size: 1.65rem;
+  }
+
+  .stat-card .stat-icon {
+    font-size: 1.9rem;
+  }
+
+  /* Navbar en desktops pequeños */
+  .navbar-custom .navbar-brand {
+    font-size: 1.05rem;
+  }
+
+  .navbar-custom .nav-link {
+    font-size: 0.875rem;
+  }
+}
+
+/* --- 1200px y mayor (desktops grandes) --- */
+@media (min-width: 1200px) {
+  .main-container {
+    padding: 2rem;
+  }
+
+  .page-header h2 {
+    font-size: 1.4rem;
+  }
+
+  .stat-card .stat-number {
+    font-size: 1.8rem;
+  }
+
+  .stat-card .stat-icon {
+    font-size: 2rem;
+  }
+
+  /* Navbar en desktops grandes */
+  .navbar-custom .navbar-brand {
+    font-size: 1.15rem;
+  }
+
+  .navbar-custom .nav-link {
+    font-size: 0.9rem;
+  }
+
+  /* Quick access en 4 columnas */
+  .quick-access-card {
+    padding: 1.25rem 0.75rem;
+  }
+
+  .quick-access-card i {
+    font-size: 1.75rem;
+  }
+
+  .quick-access-card span {
+    font-size: 0.82rem;
+  }
+}
+
+/* --- Ajustes generales para touch devices --- */
+@media (hover: none) and (pointer: coarse) {
+
+  .btn-crear,
+  .btn-editar,
+  .btn-eliminar,
+  .quick-access-card {
+    min-height: 44px;
+    padding: 0.6rem 1rem;
+  }
+
+  .navbar-custom .nav-link {
+    padding: 0.6rem 0.8rem;
+  }
+
+  .stat-card:hover {
+    transform: none;
+  }
+
+  .quick-access-card:hover {
+    transform: none;
+  }
+}
+
+/* --- Ajustes para impresión --- */
+@media print {
+
+  .navbar-custom,
+  .footer-custom,
+  .btn-crear,
+  .btn-editar,
+  .btn-eliminar {
+    display: none !important;
+  }
+
+  .main-container {
+    padding: 0;
+  }
+
+  .card-custom {
+    box-shadow: none;
+    border: 1px solid #000;
+  }
+
+  .table-custom {
+    border-collapse: collapse;
+  }
+
+  .table-custom th,
+  .table-custom td {
+    border: 1px solid #000;
+  }
+}
+
+.stat-card .stat-number {
+  font-size: 1.5rem;
+}
+
+.modal-dialog {
+  max-width: 500px;
 }
 
 /* --- 768px a 991px (tablets) --- */
@@ -1101,6 +1330,7 @@ body {
     opacity: 0;
     transform: translateY(10px);
   }
+
   to {
     opacity: 1;
     transform: translateY(0);
@@ -1115,7 +1345,18 @@ body {
   animation: fadeInUp 0.4s ease;
 }
 
-.stat-card:nth-child(2) { animation-delay: 0.05s; }
-.stat-card:nth-child(3) { animation-delay: 0.1s; }
-.stat-card:nth-child(4) { animation-delay: 0.15s; }
-.stat-card:nth-child(5) { animation-delay: 0.2s; }
+.stat-card:nth-child(2) {
+  animation-delay: 0.05s;
+}
+
+.stat-card:nth-child(3) {
+  animation-delay: 0.1s;
+}
+
+.stat-card:nth-child(4) {
+  animation-delay: 0.15s;
+}
+
+.stat-card:nth-child(5) {
+  animation-delay: 0.2s;
+}

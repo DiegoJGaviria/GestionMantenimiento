@@ -1,13 +1,23 @@
 <?php
 // arreglo_crud.php
 
+session_start();
+
 // Conexión a la base de datos
 include("conexion.php");
+
+$isAdmin = isset($_SESSION['rol_nombre']) && $_SESSION['rol_nombre'] === 'Administrador';
+$mensaje = '';
 
 // Función para obtener todos los arreglos
 function obtenerArreglos($conn)
 {
-    $sql = "SELECT a.*, m.Nombre_Marca, u.Primer_Nombre, u.Primer_Apellido 
+    $sql = "SELECT a.*, m.Nombre_Marca, u.Primer_Nombre, u.Primer_Apellido, 
+                   (SELECT CONCAT(c.Primer_Nombre, ' ', c.Primer_Apellido)
+                    FROM Detalle_Arreglo da
+                    JOIN Cliente c ON da.Cliente_idCliente = c.idCliente
+                    WHERE da.Arreglo_idArreglo = a.idArreglo
+                    LIMIT 1) AS Nombre_Cliente
             FROM Arreglo a 
             JOIN Marca m ON a.Marca_idMarca = m.idMarca 
             JOIN Usuario u ON a.Usuario_idUsuario = u.idUsuario";
@@ -53,85 +63,100 @@ function obtenerClientes($conn)
     return $result->fetch_all(MYSQLI_ASSOC);
 }
 
+$mensaje = '';
+
 // Crear arreglo
 if (isset($_POST['crear_arreglo'])) {
-    $tipo_arreglo = $_POST['tipo_arreglo'];
-    $nombre_arreglo = $_POST['nombre_arreglo'];
-    $descripcion_cliente = $_POST['descripcion_cliente'];
-    $valor_pago = $_POST['valor_pago'];
-    $fecha_recibido = $_POST['fecha_recibido'];
-    $fecha_entrega = $_POST['fecha_entrega'];
-    $marca_id = $_POST['marca_id'];
-    $usuario_id = $_POST['usuario_id'];
-
-    $stmt = $conn->prepare("INSERT INTO Arreglo (Tipo_Arreglo, Nombre_Arreglo, Descripcion_Cliente, Valor_Pago, Fecha_Recibido, Fecha_Entrega, Marca_idMarca, Usuario_idUsuario) VALUES (?, ?, ?, ?, ?, ?, ?, ?)");
-    $stmt->bind_param("sssdssii", $tipo_arreglo, $nombre_arreglo, $descripcion_cliente, $valor_pago, $fecha_recibido, $fecha_entrega, $marca_id, $usuario_id);
-
-    if ($stmt->execute()) {
-        $arreglo_id = $conn->insert_id;
-        $detalles = json_decode($_POST['detalles_arreglo'], true);
-        foreach ($detalles as $detalle) {
-            $cliente_id = $detalle['cliente_id'];
-            $cantidad = $detalle['cantidad'];
-            $stmt_detalle = $conn->prepare("INSERT INTO Detalle_Arreglo (Cliente_idCliente, Arreglo_idArreglo, Arreglo_Marca_idMarca, Arreglo_Usuario_idUsuario, Cantidad) VALUES (?, ?, ?, ?, ?)");
-            $stmt_detalle->bind_param("iiiii", $cliente_id, $arreglo_id, $marca_id, $usuario_id, $cantidad);
-            $stmt_detalle->execute();
-        }
-        echo "<div class='alert alert-success'>Arreglo creado con éxito</div>";
+    if (!$isAdmin) {
+        $mensaje = "<div class='alert alert-danger'>Solo el administrador puede crear y asignar arreglos.</div>";
     } else {
-        echo "<div class='alert alert-danger'>Error: " . $stmt->error . "</div>";
+        $tipo_arreglo = $_POST['tipo_arreglo'];
+        $nombre_arreglo = $_POST['nombre_arreglo'];
+        $descripcion_cliente = $_POST['descripcion_cliente'];
+        $valor_pago = $_POST['valor_pago'];
+        $fecha_recibido = $_POST['fecha_recibido'];
+        $fecha_entrega = $_POST['fecha_entrega'];
+        $marca_id = $_POST['marca_id'];
+        $usuario_id = $_POST['usuario_id'];
+
+        $stmt = $conn->prepare("INSERT INTO Arreglo (Tipo_Arreglo, Nombre_Arreglo, Descripcion_Cliente, Valor_Pago, Fecha_Recibido, Fecha_Entrega, Marca_idMarca, Usuario_idUsuario) VALUES (?, ?, ?, ?, ?, ?, ?, ?)");
+        $stmt->bind_param("sssdssii", $tipo_arreglo, $nombre_arreglo, $descripcion_cliente, $valor_pago, $fecha_recibido, $fecha_entrega, $marca_id, $usuario_id);
+
+        if ($stmt->execute()) {
+            $arreglo_id = $conn->insert_id;
+            $detalles = json_decode($_POST['detalles_arreglo'], true);
+            foreach ($detalles as $detalle) {
+                $cliente_id = $detalle['cliente_id'];
+                $cantidad = $detalle['cantidad'];
+                $stmt_detalle = $conn->prepare("INSERT INTO Detalle_Arreglo (Cliente_idCliente, Arreglo_idArreglo, Arreglo_Marca_idMarca, Arreglo_Usuario_idUsuario, Cantidad) VALUES (?, ?, ?, ?, ?)");
+                $stmt_detalle->bind_param("iiiii", $cliente_id, $arreglo_id, $marca_id, $usuario_id, $cantidad);
+                $stmt_detalle->execute();
+            }
+            $mensaje = "<div class='alert alert-success'>Arreglo creado con éxito</div>";
+        } else {
+            $mensaje = "<div class='alert alert-danger'>Error: " . $stmt->error . "</div>";
+        }
     }
 }
 
 // Actualizar arreglo
 if (isset($_POST['actualizar_arreglo'])) {
-    $id = $_POST['id_arreglo'];
-    $tipo_arreglo = $_POST['tipo_arreglo'];
-    $nombre_arreglo = $_POST['nombre_arreglo'];
-    $descripcion_cliente = $_POST['descripcion_cliente'];
-    $valor_pago = $_POST['valor_pago'];
-    $fecha_recibido = $_POST['fecha_recibido'];
-    $fecha_entrega = $_POST['fecha_entrega'];
-    $marca_id = $_POST['marca_id'];
-    $usuario_id = $_POST['usuario_id'];
-
-    $stmt = $conn->prepare("UPDATE Arreglo SET Tipo_Arreglo=?, Nombre_Arreglo=?, Descripcion_Cliente=?, Valor_Pago=?, Fecha_Recibido=?, Fecha_Entrega=?, Marca_idMarca=?, Usuario_idUsuario=? WHERE idArreglo=?");
-    $stmt->bind_param("sssdssiii", $tipo_arreglo, $nombre_arreglo, $descripcion_cliente, $valor_pago, $fecha_recibido, $fecha_entrega, $marca_id, $usuario_id, $id);
-
-    if ($stmt->execute()) {
-        // Eliminar detalles existentes
-        $stmt_delete = $conn->prepare("DELETE FROM Detalle_Arreglo WHERE Arreglo_idArreglo=?");
-        $stmt_delete->bind_param("i", $id);
-        $stmt_delete->execute();
-
-        // Insertar nuevos detalles
-        $detalles = json_decode($_POST['detalles_arreglo'], true);
-        foreach ($detalles as $detalle) {
-            $cliente_id = $detalle['cliente_id'];
-            $cantidad = $detalle['cantidad'];
-            $stmt_detalle = $conn->prepare("INSERT INTO Detalle_Arreglo (Cliente_idCliente, Arreglo_idArreglo, Arreglo_Marca_idMarca, Arreglo_Usuario_idUsuario, Cantidad) VALUES (?, ?, ?, ?, ?)");
-            $stmt_detalle->bind_param("iiiii", $cliente_id, $id, $marca_id, $usuario_id, $cantidad);
-            $stmt_detalle->execute();
-        }
-        echo "<div class='alert alert-success'>Arreglo actualizado con éxito</div>";
+    if (!$isAdmin) {
+        $mensaje = "<div class='alert alert-danger'>Solo el administrador puede actualizar arreglos.</div>";
     } else {
-        echo "<div class='alert alert-danger'>Error: " . $stmt->error . "</div>";
+        $id = $_POST['id_arreglo'];
+        $tipo_arreglo = $_POST['tipo_arreglo'];
+        $nombre_arreglo = $_POST['nombre_arreglo'];
+        $descripcion_cliente = $_POST['descripcion_cliente'];
+        $valor_pago = $_POST['valor_pago'];
+        $fecha_recibido = $_POST['fecha_recibido'];
+        $fecha_entrega = $_POST['fecha_entrega'];
+        $marca_id = $_POST['marca_id'];
+        $usuario_id = $_POST['usuario_id'];
+
+        $stmt = $conn->prepare("UPDATE Arreglo SET Tipo_Arreglo=?, Nombre_Arreglo=?, Descripcion_Cliente=?, Valor_Pago=?, Fecha_Recibido=?, Fecha_Entrega=?, Marca_idMarca=?, Usuario_idUsuario=? WHERE idArreglo=?");
+        $stmt->bind_param("sssdssiii", $tipo_arreglo, $nombre_arreglo, $descripcion_cliente, $valor_pago, $fecha_recibido, $fecha_entrega, $marca_id, $usuario_id, $id);
+
+        if ($stmt->execute()) {
+            // Eliminar detalles existentes
+            $stmt_delete = $conn->prepare("DELETE FROM Detalle_Arreglo WHERE Arreglo_idArreglo=?");
+            $stmt_delete->bind_param("i", $id);
+            $stmt_delete->execute();
+
+            // Insertar nuevos detalles
+            $detalles = json_decode($_POST['detalles_arreglo'], true);
+            foreach ($detalles as $detalle) {
+                $cliente_id = $detalle['cliente_id'];
+                $cantidad = $detalle['cantidad'];
+                $stmt_detalle = $conn->prepare("INSERT INTO Detalle_Arreglo (Cliente_idCliente, Arreglo_idArreglo, Arreglo_Marca_idMarca, Arreglo_Usuario_idUsuario, Cantidad) VALUES (?, ?, ?, ?, ?)");
+                $stmt_detalle->bind_param("iiiii", $cliente_id, $id, $marca_id, $usuario_id, $cantidad);
+                $stmt_detalle->execute();
+            }
+            $mensaje = "<div class='alert alert-success'>Arreglo actualizado con éxito</div>";
+        } else {
+            $mensaje = "<div class='alert alert-danger'>Error: " . $stmt->error . "</div>";
+        }
     }
 }
 
 // Eliminar arreglo
 if (isset($_GET['eliminar'])) {
     $id = $_GET['eliminar'];
+
     $stmt_delete_detalles = $conn->prepare("DELETE FROM Detalle_Arreglo WHERE Arreglo_idArreglo=?");
     $stmt_delete_detalles->bind_param("i", $id);
     $stmt_delete_detalles->execute();
 
+    $stmt_delete_diagnostico = $conn->prepare("DELETE FROM Detalle_Diagnostico WHERE Arreglo_idArreglo=?");
+    $stmt_delete_diagnostico->bind_param("i", $id);
+    $stmt_delete_diagnostico->execute();
+
     $stmt_delete_arreglo = $conn->prepare("DELETE FROM Arreglo WHERE idArreglo=?");
     $stmt_delete_arreglo->bind_param("i", $id);
     if ($stmt_delete_arreglo->execute()) {
-        echo "<div class='alert alert-success'>Arreglo eliminado con éxito</div>";
+        $mensaje = "<div class='alert alert-success'>Arreglo eliminado con éxito. Primero se eliminaron los detalles asociados.</div>";
     } else {
-        echo "<div class='alert alert-danger'>Error: " . $stmt_delete_arreglo->error . "</div>";
+        $mensaje = "<div class='alert alert-danger'>Error: " . $stmt_delete_arreglo->error . "</div>";
     }
 }
 
@@ -155,15 +180,18 @@ $clientes = obtenerClientes($conn);
 
 <body class="bg-light">
     <?php include 'navbar.php'; ?>
+    <?php echo $mensaje; ?>
 
     <div class="container mt-4">
         <div class="card">
             <div class="card-header d-flex justify-content-between align-items-center">
                 <h2>Listar Arreglos</h2>
+                <?php if ($isAdmin): ?>
                 <button type="button" class="btn btn-primary" data-bs-toggle="modal"
                     data-bs-target="#crearArregloModal">
                     Crear Arreglo
                 </button>
+                <?php endif; ?>
             </div>
             <div class="card-body">
                 <div class="table-responsive">
@@ -178,6 +206,7 @@ $clientes = obtenerClientes($conn);
                                 <th>Fecha Entrega</th>
                                 <th>Marca</th>
                                 <th>Usuario</th>
+                                <th>Cliente</th>
                                 <th>Acciones</th>
                             </tr>
                         </thead>
@@ -187,11 +216,12 @@ $clientes = obtenerClientes($conn);
                                     <td><?php echo $arreglo['idArreglo']; ?></td>
                                     <td><?php echo $arreglo['Tipo_Arreglo']; ?></td>
                                     <td><?php echo $arreglo['Nombre_Arreglo']; ?></td>
-                                    <td><?php echo $arreglo['Valor_Pago']; ?></td>
+                                    <td><?php echo '$ ' . number_format($arreglo['Valor_Pago'], 0); ?></td>
                                     <td><?php echo $arreglo['Fecha_Recibido']; ?></td>
                                     <td><?php echo $arreglo['Fecha_Entrega']; ?></td>
                                     <td><?php echo $arreglo['Nombre_Marca']; ?></td>
                                     <td><?php echo $arreglo['Primer_Nombre'] . ' ' . $arreglo['Primer_Apellido']; ?></td>
+                                    <td><?php echo $arreglo['Nombre_Cliente']; ?></td>
                                     <td>
                                         <button type="button" class="btn btn-sm btn-warning" data-bs-toggle="modal"
                                             data-bs-target="#editarArregloModal<?php echo $arreglo['idArreglo']; ?>">
@@ -199,7 +229,7 @@ $clientes = obtenerClientes($conn);
                                         </button>
                                         <a href="?eliminar=<?php echo $arreglo['idArreglo']; ?>"
                                             class="btn btn-sm btn-danger"
-                                            onclick="return confirm('¿Estás seguro de que quieres eliminar este arreglo?')">Eliminar</a>
+                                            onclick="return confirm('¿Estás seguro? Primero se eliminarán los detalles asociados a este arreglo.')">Eliminar</a>
                                     </td>
                                 </tr>
                             <?php endforeach; ?>
@@ -223,17 +253,17 @@ $clientes = obtenerClientes($conn);
                     <form id="crearArregloForm" action="" method="post">
                         <div class="row mb-3">
                             <div class="col-md-6">
-                                <label for="tipo_arreglo" class="form-label">Tipo de Arreglo</label>
+                                <label for="tipo_arreglo" class="form-label">Tipo de dispositivo</label>
                                 <input type="text" class="form-control" id="tipo_arreglo" name="tipo_arreglo" required>
                             </div>
                             <div class="col-md-6">
-                                <label for="nombre_arreglo" class="form-label">Nombre del Arreglo</label>
+                                <label for="nombre_arreglo" class="form-label">Daño / actualizacion arreglo</label>
                                 <input type="text" class="form-control" id="nombre_arreglo" name="nombre_arreglo"
                                     required>
                             </div>
                         </div>
                         <div class="mb-3">
-                            <label for="descripcion_cliente" class="form-label">Descripción del Cliente</label>
+                            <label for="descripcion_cliente" class="form-label">Descripción del dispositivo</label>
                             <textarea class="form-control" id="descripcion_cliente" name="descripcion_cliente" rows="3"
                                 required></textarea>
                         </div>
