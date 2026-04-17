@@ -1,14 +1,20 @@
 <?php
-// usuario_crud.php
+/**
+ * User management page - Admin only
+ * Implements secure CRUD operations with prepared statements and CSRF protection
+ */
 
 include('auth.php');
-
-// Conexión a la base de datos
 include("conexion.php");
 
 if (!isset($_SESSION['rol_nombre']) || $_SESSION['rol_nombre'] !== 'Administrador') {
     header('Location: index.php');
     exit();
+}
+
+// CSRF token generation
+if (empty($_SESSION['csrf_token'])) {
+    $_SESSION['csrf_token'] = bin2hex(random_bytes(32));
 }
 
 // Función para obtener todos los usuarios
@@ -32,54 +38,105 @@ function obtenerRoles($conn)
 
 // Crear usuario
 if (isset($_POST['crear_usuario'])) {
-    $primer_nombre = $_POST['primer_nombre'];
-    $segundo_nombre = $_POST['segundo_nombre'];
-    $primer_apellido = $_POST['primer_apellido'];
-    $segundo_apellido = $_POST['segundo_apellido'];
-    $correo = $_POST['correo'];
-    $contrasena = password_hash($_POST['contrasena'], PASSWORD_DEFAULT);
-    $edad = $_POST['edad'];
-    $rol_id = $_POST['rol_id'];
-
-    $stmt = $conn->prepare("INSERT INTO Usuario (Primer_Nombre, Segundo_Nombre, Primer_Apellido, Segundo_Apellido, Correo, `Contraseña`, Edad, Rol_idRol) VALUES (?, ?, ?, ?, ?, ?, ?, ?)");
-    if ($stmt) {
-        $stmt->bind_param('ssssssii', $primer_nombre, $segundo_nombre, $primer_apellido, $segundo_apellido, $correo, $contrasena, $edad, $rol_id);
-        if ($stmt->execute()) {
-            echo "<div class='alert alert-success'>Usuario creado con éxito</div>";
-        } else {
-            echo "<div class='alert alert-danger'>Error al crear usuario: " . $stmt->error . "</div>";
-        }
-        $stmt->close();
+    // CSRF protection
+    if (!isset($_POST['csrf_token']) || !hash_equals($_SESSION['csrf_token'], $_POST['csrf_token'])) {
+        echo "<div class='alert alert-danger'>Error de seguridad. Intente nuevamente.</div>";
     } else {
-        echo "<div class='alert alert-danger'>Error en la preparación de la consulta: " . $conn->error . "</div>";
+        $primer_nombre = trim($_POST['primer_nombre'] ?? '');
+        $segundo_nombre = trim($_POST['segundo_nombre'] ?? '');
+        $primer_apellido = trim($_POST['primer_apellido'] ?? '');
+        $segundo_apellido = trim($_POST['segundo_apellido'] ?? '');
+        $correo = trim($_POST['correo'] ?? '');
+        $contrasena = $_POST['contrasena'] ?? '';
+        $edad = (int)($_POST['edad'] ?? 0);
+        $rol_id = (int)($_POST['rol_id'] ?? 0);
+
+        // Validation
+        $errors = [];
+        if (empty($primer_nombre)) $errors[] = "Primer nombre es obligatorio.";
+        if (empty($primer_apellido)) $errors[] = "Primer apellido es obligatorio.";
+        if (!filter_var($correo, FILTER_VALIDATE_EMAIL)) $errors[] = "Correo electrónico inválido.";
+        if (strlen($contrasena) < PASSWORD_MIN_LENGTH) $errors[] = "La contraseña debe tener al menos " . PASSWORD_MIN_LENGTH . " caracteres.";
+        if ($edad < 18 || $edad > 100) $errors[] = "Edad debe estar entre 18 y 100 años.";
+        if ($rol_id < 1) $errors[] = "Rol inválido.";
+
+        // Check if email already exists
+        if (empty($errors)) {
+            $stmt_check = $conn->prepare("SELECT idUsuario FROM Usuario WHERE Correo = ?");
+            $stmt_check->bind_param("s", $correo);
+            $stmt_check->execute();
+            if ($stmt_check->get_result()->num_rows > 0) {
+                $errors[] = "El correo electrónico ya está registrado.";
+            }
+            $stmt_check->close();
+        }
+
+        if (empty($errors)) {
+            $hashed_password = password_hash($contrasena, PASSWORD_DEFAULT);
+            $stmt = $conn->prepare("INSERT INTO Usuario (Primer_Nombre, Segundo_Nombre, Primer_Apellido, Segundo_Apellido, Correo, `Contraseña`, Edad, Rol_idRol) VALUES (?, ?, ?, ?, ?, ?, ?, ?)");
+            if ($stmt) {
+                $stmt->bind_param('ssssssii', $primer_nombre, $segundo_nombre, $primer_apellido, $segundo_apellido, $correo, $hashed_password, $edad, $rol_id);
+                if ($stmt->execute()) {
+                    echo "<div class='alert alert-success'>Usuario creado con éxito</div>";
+                } else {
+                    error_log("Error creating user: " . $stmt->error);
+                    echo "<div class='alert alert-danger'>Error al crear usuario.</div>";
+                }
+                $stmt->close();
+            } else {
+                error_log("Error preparing create statement: " . $conn->error);
+                echo "<div class='alert alert-danger'>Error interno del servidor.</div>";
+            }
+        } else {
+            echo "<div class='alert alert-danger'>" . implode("<br>", array_map('htmlspecialchars', $errors)) . "</div>";
+        }
     }
 }
 
 // Actualizar usuario
 if (isset($_POST['actualizar_usuario'])) {
-    $id = $_POST['id_usuario'];
-    $primer_nombre = $_POST['primer_nombre'];
-    $segundo_nombre = $_POST['segundo_nombre'];
-    $primer_apellido = $_POST['primer_apellido'];
-    $segundo_apellido = $_POST['segundo_apellido'];
-    $correo = $_POST['correo'];
-    $edad = $_POST['edad'];
-    $rol_id = $_POST['rol_id'];
-
-    $sql = "UPDATE Usuario SET 
-            Primer_Nombre='$primer_nombre', 
-            Segundo_Nombre='$segundo_nombre', 
-            Primer_Apellido='$primer_apellido', 
-            Segundo_Apellido='$segundo_apellido', 
-            Correo='$correo', 
-            Edad=$edad, 
-            Rol_idRol=$rol_id 
-            WHERE idUsuario=$id";
-
-    if ($conn->query($sql) === TRUE) {
-        echo "<div class='alert alert-success'>Usuario actualizado con éxito</div>";
+    // CSRF protection
+    if (!isset($_POST['csrf_token']) || !hash_equals($_SESSION['csrf_token'], $_POST['csrf_token'])) {
+        echo "<div class='alert alert-danger'>Error de seguridad. Intente nuevamente.</div>";
     } else {
-        echo "<div class='alert alert-danger'>Error: " . $sql . "<br>" . $conn->error . "</div>";
+        $id = (int)($_POST['id_usuario'] ?? 0);
+        $primer_nombre = trim($_POST['primer_nombre'] ?? '');
+        $segundo_nombre = trim($_POST['segundo_nombre'] ?? '');
+        $primer_apellido = trim($_POST['primer_apellido'] ?? '');
+        $segundo_apellido = trim($_POST['segundo_apellido'] ?? '');
+        $correo = trim($_POST['correo'] ?? '');
+        $edad = (int)($_POST['edad'] ?? 0);
+        $rol_id = (int)($_POST['rol_id'] ?? 0);
+
+        // Validation
+        $errors = [];
+        if (empty($primer_nombre)) $errors[] = "Primer nombre es obligatorio.";
+        if (empty($primer_apellido)) $errors[] = "Primer apellido es obligatorio.";
+        if (!filter_var($correo, FILTER_VALIDATE_EMAIL)) $errors[] = "Correo electrónico inválido.";
+        if ($edad < 18 || $edad > 100) $errors[] = "Edad debe estar entre 18 y 100 años.";
+        if ($rol_id < 1) $errors[] = "Rol inválido.";
+
+        if (empty($errors)) {
+            $stmt = $conn->prepare("UPDATE Usuario SET
+                    Primer_Nombre=?, Segundo_Nombre=?, Primer_Apellido=?, Segundo_Apellido=?,
+                    Correo=?, Edad=?, Rol_idRol=? WHERE idUsuario=?");
+            if ($stmt) {
+                $stmt->bind_param("sssssiii", $primer_nombre, $segundo_nombre, $primer_apellido,
+                    $segundo_apellido, $correo, $edad, $rol_id, $id);
+                if ($stmt->execute()) {
+                    echo "<div class='alert alert-success'>Usuario actualizado con éxito</div>";
+                } else {
+                    error_log("Error updating user: " . $stmt->error);
+                    echo "<div class='alert alert-danger'>Error al actualizar usuario.</div>";
+                }
+                $stmt->close();
+            } else {
+                error_log("Error preparing update statement: " . $conn->error);
+                echo "<div class='alert alert-danger'>Error interno del servidor.</div>";
+            }
+        } else {
+            echo "<div class='alert alert-danger'>" . implode("<br>", array_map('htmlspecialchars', $errors)) . "</div>";
+        }
     }
 }
 
@@ -200,6 +257,7 @@ $roles = obtenerRoles($conn);
                 </div>
                 <div class="modal-body">
                     <form action="" method="post">
+                        <input type="hidden" name="csrf_token" value="<?php echo htmlspecialchars($_SESSION['csrf_token']); ?>">
                         <div class="mb-3">
                             <label for="primer_nombre" class="form-label">Primer Nombre</label>
                             <input type="text" class="form-control" id="primer_nombre" name="primer_nombre" required>
@@ -210,8 +268,7 @@ $roles = obtenerRoles($conn);
                         </div>
                         <div class="mb-3">
                             <label for="primer_apellido" class="form-label">Primer Apellido</label>
-                            <input type="text" class="form-control" id="primer_apellido" name="primer_apellido"
-                                required>
+                            <input type="text" class="form-control" id="primer_apellido" name="primer_apellido" required>
                         </div>
                         <div class="mb-3">
                             <label for="segundo_apellido" class="form-label">Segundo Apellido</label>
@@ -223,17 +280,17 @@ $roles = obtenerRoles($conn);
                         </div>
                         <div class="mb-3">
                             <label for="contrasena" class="form-label">Contraseña</label>
-                            <input type="password" class="form-control" id="contrasena" name="contrasena" required>
+                            <input type="password" class="form-control" id="contrasena" name="contrasena" required minlength="<?php echo PASSWORD_MIN_LENGTH; ?>">
                         </div>
                         <div class="mb-3">
                             <label for="edad" class="form-label">Edad</label>
-                            <input type="number" class="form-control" id="edad" name="edad" required>
+                            <input type="number" class="form-control" id="edad" name="edad" required min="18" max="100">
                         </div>
                         <div class="mb-3">
                             <label for="rol_id" class="form-label">Rol</label>
                             <select class="form-select" id="rol_id" name="rol_id" required>
                                 <?php foreach ($roles as $rol): ?>
-                                    <option value="<?php echo $rol['idRol']; ?>"><?php echo $rol['Nombre_Rol']; ?></option>
+                                    <option value="<?php echo htmlspecialchars($rol['idRol']); ?>"><?php echo htmlspecialchars($rol['Nombre_Rol']); ?></option>
                                 <?php endforeach; ?>
                             </select>
                         </div>
@@ -257,39 +314,40 @@ $roles = obtenerRoles($conn);
                     </div>
                     <div class="modal-body">
                         <form action="" method="post">
+                            <input type="hidden" name="csrf_token" value="<?php echo htmlspecialchars($_SESSION['csrf_token']); ?>">
                             <input type="hidden" name="id_usuario" value="<?php echo $usuario['idUsuario']; ?>">
                             <div class="mb-3">
                                 <label for="primer_nombre<?php echo $usuario['idUsuario']; ?>" class="form-label">Primer
                                     Nombre</label>
                                 <input type="text" class="form-control"
                                     id="primer_nombre<?php echo $usuario['idUsuario']; ?>" name="primer_nombre"
-                                    value="<?php echo $usuario['Primer_Nombre']; ?>" required>
+                                    value="<?php echo htmlspecialchars($usuario['Primer_Nombre']); ?>" required>
                             </div>
                             <div class="mb-3">
                                 <label for="segundo_nombre<?php echo $usuario['idUsuario']; ?>" class="form-label">Segundo
                                     Nombre</label>
                                 <input type="text" class="form-control"
                                     id="segundo_nombre<?php echo $usuario['idUsuario']; ?>" name="segundo_nombre"
-                                    value="<?php echo $usuario['Segundo_Nombre']; ?>">
+                                    value="<?php echo htmlspecialchars($usuario['Segundo_Nombre']); ?>">
                             </div>
                             <div class="mb-3">
                                 <label for="primer_apellido<?php echo $usuario['idUsuario']; ?>" class="form-label">Primer
                                     Apellido</label>
                                 <input type="text" class="form-control"
                                     id="primer_apellido<?php echo $usuario['idUsuario']; ?>" name="primer_apellido"
-                                    value="<?php echo $usuario['Primer_Apellido']; ?>" required>
+                                    value="<?php echo htmlspecialchars($usuario['Primer_Apellido']); ?>" required>
                             </div>
                             <div class="mb-3">
                                 <label for="segundo_apellido<?php echo $usuario['idUsuario']; ?>" class="form-label">Segundo
                                     Apellido</label>
                                 <input type="text" class="form-control"
                                     id="segundo_apellido<?php echo $usuario['idUsuario']; ?>" name="segundo_apellido"
-                                    value="<?php echo $usuario['Segundo_Apellido']; ?>">
+                                    value="<?php echo htmlspecialchars($usuario['Segundo_Apellido']); ?>">
                             </div>
                             <div class="mb-3">
                                 <label for="correo<?php echo $usuario['idUsuario']; ?>" class="form-label">Correo</label>
                                 <input type="email" class="form-control" id="correo<?php echo $usuario['idUsuario']; ?>"
-                                    name="correo" value="<?php echo $usuario['Correo']; ?>" required>
+                                    name="correo" value="<?php echo htmlspecialchars($usuario['Correo']); ?>" required>
                             </div>
                             <div class="mb-3">
                                 <label for="edad<?php echo $usuario['idUsuario']; ?>" class="form-label">Edad</label>

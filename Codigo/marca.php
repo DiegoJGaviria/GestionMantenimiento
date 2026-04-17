@@ -1,50 +1,153 @@
 <?php
-// Conexión a la base de datos
-include("conexion.php");
+/**
+ * Marcas management page
+ * Implements secure CRUD operations with prepared statements and CSRF protection
+ */
 
-// Función para obtener todas las marcas
-function obtenerMarcas($conn)
-{
-    $sql = "SELECT * FROM Marca";
+if (session_status() === PHP_SESSION_NONE) {
+    session_start();
+}
+include("conexion.php");
+include("auth.php"); // Include authentication
+
+// CSRF token generation
+if (empty($_SESSION['csrf_token'])) {
+    $_SESSION['csrf_token'] = bin2hex(random_bytes(32));
+}
+
+// Constants for validation
+const MAX_NOMBRE_LENGTH = 100;
+
+// Functions
+/**
+ * Get all brands from database
+ * @param mysqli $conn Database connection
+ * @return array Array of brands
+ */
+function obtenerMarcas($conn) {
+    $sql = "SELECT * FROM Marca ORDER BY Nombre_Marca";
     $result = $conn->query($sql);
+    if (!$result) {
+        error_log("Error getting brands: " . $conn->error);
+        return [];
+    }
     return $result->fetch_all(MYSQLI_ASSOC);
 }
 
-// Crear marca
-if (isset($_POST['crear_marca'])) {
-    $nombre = $_POST['nombre_marca'];
-    $sql = "INSERT INTO Marca (Nombre_Marca) VALUES ('$nombre')";
-    if ($conn->query($sql) === TRUE) {
-        echo "Marca creada con éxito";
+/**
+ * Validate brand name
+ * @param string $nombre Brand name
+ * @return string Error message or empty string if valid
+ */
+function validarNombreMarca($nombre) {
+    $nombre = trim($nombre);
+    if (empty($nombre)) {
+        return "El nombre de la marca es obligatorio.";
+    }
+    if (strlen($nombre) > MAX_NOMBRE_LENGTH) {
+        return "El nombre de la marca no puede exceder " . MAX_NOMBRE_LENGTH . " caracteres.";
+    }
+    if (!preg_match('/^[a-zA-Z0-9\s\-&]+$/', $nombre)) {
+        return "El nombre de la marca contiene caracteres inválidos.";
+    }
+    return "";
+}
+
+// Handle POST requests
+$mensaje = '';
+
+if ($_SERVER["REQUEST_METHOD"] === "POST") {
+    // CSRF protection
+    if (!isset($_POST['csrf_token']) || !hash_equals($_SESSION['csrf_token'], $_POST['csrf_token'])) {
+        $mensaje = "<div class='alert alert-danger'>Error de seguridad. Intente nuevamente.</div>";
     } else {
-        echo "Error: " . $sql . "<br>" . $conn->error;
+        // Create brand
+        if (isset($_POST['crear_marca'])) {
+            $nombre = trim($_POST['nombre_marca'] ?? '');
+            $error = validarNombreMarca($nombre);
+
+            if (empty($error)) {
+                $stmt = $conn->prepare("INSERT INTO Marca (Nombre_Marca) VALUES (?)");
+                if ($stmt) {
+                    $stmt->bind_param("s", $nombre);
+                    if ($stmt->execute()) {
+                        $mensaje = "<div class='alert alert-success'>Marca creada con éxito.</div>";
+                    } else {
+                        error_log("Error creating brand: " . $stmt->error);
+                        $mensaje = "<div class='alert alert-danger'>Error al crear la marca.</div>";
+                    }
+                    $stmt->close();
+                } else {
+                    error_log("Error preparing create statement: " . $conn->error);
+                    $mensaje = "<div class='alert alert-danger'>Error interno del servidor.</div>";
+                }
+            } else {
+                $mensaje = "<div class='alert alert-danger'>" . htmlspecialchars($error) . "</div>";
+            }
+        }
+
+        // Update brand
+        elseif (isset($_POST['actualizar_marca'])) {
+            $id = (int)($_POST['id_marca'] ?? 0);
+            $nombre = trim($_POST['nombre_marca'] ?? '');
+            $error = validarNombreMarca($nombre);
+
+            if (empty($error) && $id > 0) {
+                $stmt = $conn->prepare("UPDATE Marca SET Nombre_Marca = ? WHERE idMarca = ?");
+                if ($stmt) {
+                    $stmt->bind_param("si", $nombre, $id);
+                    if ($stmt->execute()) {
+                        $mensaje = "<div class='alert alert-success'>Marca actualizada con éxito.</div>";
+                    } else {
+                        error_log("Error updating brand: " . $stmt->error);
+                        $mensaje = "<div class='alert alert-danger'>Error al actualizar la marca.</div>";
+                    }
+                    $stmt->close();
+                } else {
+                    error_log("Error preparing update statement: " . $conn->error);
+                    $mensaje = "<div class='alert alert-danger'>Error interno del servidor.</div>";
+                }
+            } else {
+                $mensaje = "<div class='alert alert-danger'>Datos inválidos para actualizar.</div>";
+            }
+        }
     }
 }
 
-// Actualizar marca
-if (isset($_POST['actualizar_marca'])) {
-    $id = $_POST['id_marca'];
-    $nombre = $_POST['nombre_marca'];
-    $sql = "UPDATE Marca SET Nombre_Marca='$nombre' WHERE idMarca=$id";
-    if ($conn->query($sql) === TRUE) {
-        echo "Marca actualizada con éxito";
-    } else {
-        echo "Error: " . $sql . "<br>" . $conn->error;
-    }
-}
-
-// Eliminar marca
+// Handle GET requests (DELETE)
 if (isset($_GET['eliminar'])) {
-    $id = $_GET['eliminar'];
-    $sql = "DELETE FROM Marca WHERE idMarca=$id";
-    if ($conn->query($sql) === TRUE) {
-        echo "Marca eliminada con éxito";
-    } else {
-        echo "Error: " . $sql . "<br>" . $conn->error;
+    $id = (int)$_GET['eliminar'];
+    if ($id > 0) {
+        // Check if brand is being used
+        $stmt_check = $conn->prepare("SELECT COUNT(*) as count FROM Arreglo WHERE Marca_idMarca = ?");
+        $stmt_check->bind_param("i", $id);
+        $stmt_check->execute();
+        $result_check = $stmt_check->get_result();
+        $count = $result_check->fetch_assoc()['count'];
+        $stmt_check->close();
+
+        if ($count > 0) {
+            $mensaje = "<div class='alert alert-danger'>No se puede eliminar la marca porque está siendo utilizada en arreglos.</div>";
+        } else {
+            $stmt = $conn->prepare("DELETE FROM Marca WHERE idMarca = ?");
+            if ($stmt) {
+                $stmt->bind_param("i", $id);
+                if ($stmt->execute()) {
+                    $mensaje = "<div class='alert alert-success'>Marca eliminada con éxito.</div>";
+                } else {
+                    error_log("Error deleting brand: " . $stmt->error);
+                    $mensaje = "<div class='alert alert-danger'>Error al eliminar la marca.</div>";
+                }
+                $stmt->close();
+            } else {
+                error_log("Error preparing delete statement: " . $conn->error);
+                $mensaje = "<div class='alert alert-danger'>Error interno del servidor.</div>";
+            }
+        }
     }
 }
 
-$marcas = obtenerMarcas($conn);
+$marcas = obtenerMarcas($conn);     
 ?>
 
 <!DOCTYPE html>
@@ -62,6 +165,7 @@ $marcas = obtenerMarcas($conn);
 <body class="bg-light">
     <?php include 'navbar.php'; ?>
     <div class="container mt-5">
+        <?php if ($mensaje): echo $mensaje; endif; ?>
         <div class="card">
             <div class="card-header d-flex justify-content-between align-items-center">
                 <h2>Listar Marcas</h2>
@@ -70,7 +174,7 @@ $marcas = obtenerMarcas($conn);
                 </button>
             </div>
             <div class="card-body">
-                <table class="table">
+                <table class="table table-striped">
                     <thead>
                         <tr>
                             <th>ID</th>
@@ -81,13 +185,15 @@ $marcas = obtenerMarcas($conn);
                     <tbody>
                         <?php foreach ($marcas as $marca): ?>
                             <tr>
-                                <td><?php echo $marca['idMarca']; ?></td>
-                                <td><?php echo $marca['Nombre_Marca']; ?></td>
+                                <td><?php echo htmlspecialchars($marca['idMarca']); ?></td>
+                                <td><?php echo htmlspecialchars($marca['Nombre_Marca']); ?></td>
                                 <td>
                                     <button type="button" class="btn btn-sm btn-warning" data-bs-toggle="modal" data-bs-target="#editarMarcaModal<?php echo $marca['idMarca']; ?>">
-                                        Editar
+                                        <i class="bi bi-pencil"></i> Editar
                                     </button>
-                                    <a href="?eliminar=<?php echo $marca['idMarca']; ?>" class="btn btn-sm btn-danger" onclick="return confirm('¿Estás seguro de que quieres eliminar esta marca?')">Eliminar</a>
+                                    <a href="?eliminar=<?php echo $marca['idMarca']; ?>" class="btn btn-sm btn-danger" onclick="return confirm('¿Estás seguro de que quieres eliminar esta marca?')">
+                                        <i class="bi bi-trash"></i> Eliminar
+                                    </a>
                                 </td>
                             </tr>
                         <?php endforeach; ?>
@@ -107,9 +213,10 @@ $marcas = obtenerMarcas($conn);
                 </div>
                 <div class="modal-body">
                     <form action="" method="post">
+                        <input type="hidden" name="csrf_token" value="<?php echo htmlspecialchars($_SESSION['csrf_token']); ?>">
                         <div class="mb-3">
                             <label for="nombre_marca" class="form-label">Nombre de la Marca</label>
-                            <input type="text" class="form-control" id="nombre_marca" name="nombre_marca" required>
+                            <input type="text" class="form-control" id="nombre_marca" name="nombre_marca" required maxlength="<?php echo MAX_NOMBRE_LENGTH; ?>">
                         </div>
                         <button type="submit" name="crear_marca" class="btn btn-primary">Crear</button>
                     </form>
@@ -129,10 +236,11 @@ $marcas = obtenerMarcas($conn);
                     </div>
                     <div class="modal-body">
                         <form action="" method="post">
+                            <input type="hidden" name="csrf_token" value="<?php echo htmlspecialchars($_SESSION['csrf_token']); ?>">
                             <input type="hidden" name="id_marca" value="<?php echo $marca['idMarca']; ?>">
                             <div class="mb-3">
                                 <label for="nombre_marca<?php echo $marca['idMarca']; ?>" class="form-label">Nombre de la Marca</label>
-                                <input type="text" class="form-control" id="nombre_marca<?php echo $marca['idMarca']; ?>" name="nombre_marca" value="<?php echo $marca['Nombre_Marca']; ?>" required>
+                                <input type="text" class="form-control" id="nombre_marca<?php echo $marca['idMarca']; ?>" name="nombre_marca" value="<?php echo htmlspecialchars($marca['Nombre_Marca']); ?>" required maxlength="<?php echo MAX_NOMBRE_LENGTH; ?>">
                             </div>
                             <button type="submit" name="actualizar_marca" class="btn btn-primary">Actualizar</button>
                         </form>

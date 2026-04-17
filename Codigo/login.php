@@ -1,8 +1,24 @@
 ﻿<?php
+/**
+ * Login page for the computer repair management system
+ * Implements secure authentication with prepared statements and CSRF protection
+ */
+
 session_start();
 include("conexion.php");
 
-// Si ya hay sesión activa, redirige directamente a la página principal
+// Constants for error messages
+const ERROR_MISSING_CREDENTIALS = 'Por favor, ingrese correo y contraseña.';
+const ERROR_INVALID_EMAIL = 'Formato de correo electrónico inválido.';
+const ERROR_INVALID_CREDENTIALS = 'Credenciales incorrectas.';
+const ERROR_DATABASE = 'Error interno del servidor. Intente nuevamente.';
+
+// CSRF token generation
+if (empty($_SESSION['csrf_token'])) {
+    $_SESSION['csrf_token'] = bin2hex(random_bytes(32));
+}
+
+// Redirect if already logged in
 if (isset($_SESSION['usuario'])) {
     header("Location: index.php");
     exit();
@@ -12,38 +28,65 @@ $error = '';
 $correo = '';
 
 if ($_SERVER["REQUEST_METHOD"] === "POST") {
-    $correo = trim($_POST['correo'] ?? '');
-    $password = $_POST['password'] ?? '';
+    // CSRF protection
+    if (!isset($_POST['csrf_token']) || !hash_equals($_SESSION['csrf_token'], $_POST['csrf_token'])) {
+        // Log CSRF attempt
+        include_once 'logger.php';
+        logSecurityEvent('CSRF_ATTEMPT', 'Intento de ataque CSRF detectado');
 
-    if ($correo === '' || $password === '') {
-        $error = 'Ingrese correo y contraseña.';
+        $error = ERROR_INVALID_CREDENTIALS;
     } else {
-        $stmt = $conn->prepare("SELECT u.idUsuario, u.Primer_Nombre, u.Primer_Apellido, u.`Contraseña`, u.Rol_idRol, r.Nombre_Rol FROM Usuario u LEFT JOIN Rol r ON u.Rol_idRol = r.idRol WHERE u.Correo = ? LIMIT 1");
-        if ($stmt) {
-            $stmt->bind_param('s', $correo);
-            $stmt->execute();
-            $resultado = $stmt->get_result();
+        $correo = trim($_POST['correo'] ?? '');
+        $password = $_POST['password'] ?? '';
 
-            if ($fila = $resultado->fetch_assoc()) {
-                $storedPassword = $fila['Contraseña'];
-
-                if (password_verify($password, $storedPassword) || $storedPassword === $password) {
-                    $_SESSION['usuario'] = $fila['Primer_Nombre'] . ' ' . $fila['Primer_Apellido'];
-                    $_SESSION['idUsuario'] = $fila['idUsuario'];
-                    $_SESSION['idRol'] = $fila['Rol_idRol'];
-                    $_SESSION['rol_nombre'] = $fila['Nombre_Rol'] ?: 'Usuario';
-                    header("Location: index.php");
-                    exit();
-                } else {
-                    $error = 'Contraseña incorrecta.';
-                }
-            } else {
-                $error = 'Correo no registrado.';
-            }
-
-            $stmt->close();
+        // Input validation
+        if (empty($correo) || empty($password)) {
+            $error = ERROR_MISSING_CREDENTIALS;
+        } elseif (!filter_var($correo, FILTER_VALIDATE_EMAIL)) {
+            $error = ERROR_INVALID_EMAIL;
         } else {
-            $error = 'Error en la consulta de login: ' . $conn->error;
+            // Database query with prepared statement
+            $stmt = $conn->prepare("SELECT u.idUsuario, u.Primer_Nombre, u.Primer_Apellido, u.`Contraseña`, u.Rol_idRol, r.Nombre_Rol FROM Usuario u LEFT JOIN Rol r ON u.Rol_idRol = r.idRol WHERE u.Correo = ? LIMIT 1");
+            if ($stmt) {
+                $stmt->bind_param('s', $correo);
+                $stmt->execute();
+                $resultado = $stmt->get_result();
+
+                if ($fila = $resultado->fetch_assoc()) {
+                    $storedPassword = $fila['Contraseña'];
+
+                    // Verify password using secure hashing
+                    if (password_verify($password, $storedPassword)) {
+                        // Set session variables
+                        $_SESSION['usuario'] = $fila['Primer_Nombre'] . ' ' . $fila['Primer_Apellido'];
+                        $_SESSION['idUsuario'] = $fila['idUsuario'];
+                        $_SESSION['idRol'] = $fila['Rol_idRol'];
+                        $_SESSION['rol_nombre'] = $fila['Nombre_Rol'] ?: 'Usuario';
+
+                        // Regenerate session ID for security
+                        session_regenerate_id(true);
+
+                        // Log successful login
+                        include_once 'logger.php';
+                        logAuthEvent('LOGIN_SUCCESS', 'Usuario autenticado exitosamente', $correo);
+
+                        header("Location: index.php");
+                        exit();
+                    } else {
+                        // Log failed login attempt
+                        include_once 'logger.php';
+                        logAuthEvent('LOGIN_FAILED', 'Intento de login fallido - contraseña incorrecta', $correo);
+
+                        $error = ERROR_INVALID_CREDENTIALS;
+                    }
+                } else {
+                    $error = ERROR_INVALID_CREDENTIALS;
+                }
+
+                $stmt->close();
+            } else {
+                $error = ERROR_DATABASE;
+            }
         }
     }
 }
@@ -85,12 +128,13 @@ if ($_SERVER["REQUEST_METHOD"] === "POST") {
                             <div class="alert alert-danger"><?php echo htmlspecialchars($error); ?></div>
                         <?php endif; ?>
                         <form method="POST" novalidate>
+                            <input type="hidden" name="csrf_token" value="<?php echo htmlspecialchars($_SESSION['csrf_token']); ?>">
                             <div class="mb-3">
                                 <label for="correo" class="form-label">Correo</label>
-                                <input type="email" class="form-control" style="background-color: #f8f9fa; border-color: #2a5298; font-weight: bold; id="correo" name="correo"
+                                <input type="email" class="form-control" id="correo" name="correo"
                                     placeholder="correo@ejemplo.com" required
-                                    value="<?php echo htmlspecialchars($correo); ?>
-                                    ">
+                                    value="<?php echo htmlspecialchars($correo); ?>"
+                                    style="background-color: #f8f9fa; border-color: #2a5298; font-weight: bold;">
                             </div>
                             <div class="mb-3">
                                 <label for="password" class="form-label">Contraseña</label>
