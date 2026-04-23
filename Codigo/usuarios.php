@@ -72,10 +72,9 @@ if (isset($_POST['crear_usuario'])) {
         }
 
         if (empty($errors)) {
-            $hashed_password = password_hash($contrasena, PASSWORD_DEFAULT);
             $stmt = $conn->prepare("INSERT INTO Usuario (Primer_Nombre, Segundo_Nombre, Primer_Apellido, Segundo_Apellido, Correo, `Contraseña`, Edad, Rol_idRol) VALUES (?, ?, ?, ?, ?, ?, ?, ?)");
             if ($stmt) {
-                $stmt->bind_param('ssssssii', $primer_nombre, $segundo_nombre, $primer_apellido, $segundo_apellido, $correo, $hashed_password, $edad, $rol_id);
+                $stmt->bind_param('ssssssii', $primer_nombre, $segundo_nombre, $primer_apellido, $segundo_apellido, $correo, $contrasena, $edad, $rol_id);
                 if ($stmt->execute()) {
                     echo "<div class='alert alert-success'>Usuario creado con éxito</div>";
                 } else {

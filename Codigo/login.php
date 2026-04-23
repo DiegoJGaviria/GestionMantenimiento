@@ -55,8 +55,8 @@ if ($_SERVER["REQUEST_METHOD"] === "POST") {
                 if ($fila = $resultado->fetch_assoc()) {
                     $storedPassword = $fila['Contraseña'];
 
-                    // Verify password using secure hashing
-                    if (password_verify($password, $storedPassword)) {
+                    // Verify password allowing plain text or previously hashed values
+                    if ($storedPassword === $password || password_verify($password, $storedPassword)) {
                         // Set session variables
                         $_SESSION['usuario'] = $fila['Primer_Nombre'] . ' ' . $fila['Primer_Apellido'];
                         $_SESSION['idUsuario'] = $fila['idUsuario'];

@@ -1,6 +1,7 @@
 <?php
 // diagnostico_crud.php
 
+include('auth.php');
 // Conexión a la base de datos
 include("conexion.php");
 

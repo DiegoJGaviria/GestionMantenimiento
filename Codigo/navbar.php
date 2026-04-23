@@ -16,13 +16,13 @@
         <li class="nav-item">
           <a class="nav-link" href="usuarios.php">Usuarios</a>
         </li>
-        <?php endif; ?>
         <li class="nav-item">
           <a class="nav-link" href="marca.php">Marcas</a>
         </li>
         <li class="nav-item">
           <a class="nav-link" href="cliente.php">Clientes</a>
         </li>
+        <?php endif; ?>
         <li class="nav-item">
           <a class="nav-link" href="arreglo.php">Arreglos</a>
         </li>
@@ -41,6 +41,7 @@
             <li><span class="dropdown-item-text">Rol: <?php echo htmlspecialchars($_SESSION['rol_nombre'] ?? 'Usuario'); ?></span></li>
             <?php if (isset($_SESSION['rol_nombre']) && $_SESSION['rol_nombre'] === 'Administrador'): ?>
             <li><a class="dropdown-item" href="usuarios.php">Administrar usuarios</a></li>
+            <li><a class="dropdown-item" href="usuarios.php">Gestionar cuentas</a></li>
             <?php endif; ?>
             <li><a class="dropdown-item" href="logout.php">Cerrar sesión</a></li>
           </ul>

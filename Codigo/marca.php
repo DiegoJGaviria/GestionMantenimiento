@@ -7,8 +7,13 @@
 if (session_status() === PHP_SESSION_NONE) {
     session_start();
 }
-include("conexion.php");
 include("auth.php"); // Include authentication
+include("conexion.php");
+
+if (!isset($_SESSION['rol_nombre']) || $_SESSION['rol_nombre'] !== 'Administrador') {
+    header('Location: index.php');
+    exit();
+}
 
 // CSRF token generation
 if (empty($_SESSION['csrf_token'])) {

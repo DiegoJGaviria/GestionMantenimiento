@@ -177,6 +177,7 @@ $valor_total = $conn->query("SELECT COALESCE(SUM(Valor_Pago), 0) as total FROM A
                                     <span>Nuevo Arreglo</span>
                                 </a>
                             </div>
+                            <?php if ($isAdmin): ?>
                             <div class="col-12 col-sm-6">
                                 <a href="cliente.php" class="quick-access-card">
                                     <i class="bi bi-person-plus-fill"></i>
@@ -184,15 +185,16 @@ $valor_total = $conn->query("SELECT COALESCE(SUM(Valor_Pago), 0) as total FROM A
                                 </a>
                             </div>
                             <div class="col-12 col-sm-6">
-                                <a href="diagnostico.php" class="quick-access-card">
-                                    <i class="bi bi-clipboard-plus-fill"></i>
-                                    <span>Diagnostico</span>
-                                </a>
-                            </div>
-                            <div class="col-12 col-sm-6">
                                 <a href="marca.php" class="quick-access-card">
                                     <i class="bi bi-tag-fill"></i>
                                     <span>Nueva Marca</span>
+                                </a>
+                            </div>
+                            <?php endif; ?>
+                            <div class="col-12 col-sm-6">
+                                <a href="diagnostico.php" class="quick-access-card">
+                                    <i class="bi bi-clipboard-plus-fill"></i>
+                                    <span>Diagnostico</span>
                                 </a>
                             </div>
                         </div>

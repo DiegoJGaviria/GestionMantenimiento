@@ -1,8 +1,13 @@
 <?php
 // cliente_crud.php
 
-// Conexión a la base de datos
+include('auth.php');
 include("conexion.php");
+
+if (!isset($_SESSION['rol_nombre']) || $_SESSION['rol_nombre'] !== 'Administrador') {
+    header('Location: index.php');
+    exit();
+}
 
 // Función para obtener todos los clientes
 function obtenerClientes($conn) {
