@@ -8,14 +8,14 @@ $isAdmin = isset($_SESSION['rol_nombre']) && $_SESSION['rol_nombre'] === 'Admini
 $total_clientes = $conn->query("SELECT COUNT(*) as total FROM Cliente")->fetch_assoc()['total'];
 $total_arreglos = $conn->query("SELECT COUNT(*) as total FROM Arreglo")->fetch_assoc()['total'];
 $total_diagnosticos = $conn->query("SELECT COUNT(*) as total FROM Diagnostico")->fetch_assoc()['total'];
-$total_usuarios = $conn->query("SELECT COUNT(*) as total FROM Usuario")->fetch_assoc()['total'];
+$total_tecnicos = $conn->query("SELECT COUNT(*) as total FROM Tecnico")->fetch_assoc()['total'];
 $total_marcas = $conn->query("SELECT COUNT(*) as total FROM Marca")->fetch_assoc()['total'];
 
 // Ultimos 5 arreglos
 $ultimos_arreglos = $conn->query("SELECT a.*, m.Nombre_Marca, u.Primer_Nombre, u.Primer_Apellido 
     FROM Arreglo a 
     JOIN Marca m ON a.Marca_idMarca = m.idMarca 
-    JOIN Usuario u ON a.Usuario_idUsuario = u.idUsuario 
+    JOIN Tecnico u ON a.Tecnico_idTecnico = u.idTecnico 
     ORDER BY a.idArreglo DESC LIMIT 5");
 
 // Valor total de arreglos
@@ -69,10 +69,10 @@ $valor_total = $conn->query("SELECT COALESCE(SUM(Valor_Pago), 0) as total FROM A
             </div>
             <?php if ($isAdmin): ?>
             <div class="col-12 col-sm-6 col-md-4 col-xl">
-                <div class="stat-card bg-usuarios">
+                <div class="stat-card bg-tecnicos">
                     <i class="bi bi-people-fill stat-icon"></i>
-                    <div class="stat-number"><?php echo $total_usuarios; ?></div>
-                    <div class="stat-label">Usuarios</div>
+                    <div class="stat-number"><?php echo $total_tecnicos; ?></div>
+                    <div class="stat-label">Tecnicos</div>
                 </div>
             </div>
             <?php endif; ?>

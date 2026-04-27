@@ -17,13 +17,13 @@ if (empty($_SESSION['csrf_token'])) {
     $_SESSION['csrf_token'] = bin2hex(random_bytes(32));
 }
 
-// Función para obtener todos los usuarios
-function obtenerUsuarios($conn)
+// Función para obtener todos los tecnicos
+function obtenerTecnicos($conn)
 {
-    $sql = "SELECT u.*, r.Nombre_Rol FROM Usuario u LEFT JOIN Rol r ON u.Rol_idRol = r.idRol";
+    $sql = "SELECT u.*, r.Nombre_Rol FROM Tecnico u LEFT JOIN Rol r ON u.Rol_idRol = r.idRol";
     $result = $conn->query($sql);
     if (!$result) {
-        die("Error en la consulta Usuarios: " . $conn->error);
+        die("Error en la consulta Tecnicos: " . $conn->error);
     }
     return $result->fetch_all(MYSQLI_ASSOC);
 }
@@ -36,8 +36,8 @@ function obtenerRoles($conn)
     return $result->fetch_all(MYSQLI_ASSOC);
 }
 
-// Crear usuario
-if (isset($_POST['crear_usuario'])) {
+// Crear tecnico
+if (isset($_POST['crear_tecnico'])) {
     // CSRF protection
     if (!isset($_POST['csrf_token']) || !hash_equals($_SESSION['csrf_token'], $_POST['csrf_token'])) {
         echo "<div class='alert alert-danger'>Error de seguridad. Intente nuevamente.</div>";
@@ -62,7 +62,7 @@ if (isset($_POST['crear_usuario'])) {
 
         // Check if email already exists
         if (empty($errors)) {
-            $stmt_check = $conn->prepare("SELECT idUsuario FROM Usuario WHERE Correo = ?");
+            $stmt_check = $conn->prepare("SELECT idTecnico FROM Tecnico WHERE Correo = ?");
             $stmt_check->bind_param("s", $correo);
             $stmt_check->execute();
             if ($stmt_check->get_result()->num_rows > 0) {
@@ -72,14 +72,14 @@ if (isset($_POST['crear_usuario'])) {
         }
 
         if (empty($errors)) {
-            $stmt = $conn->prepare("INSERT INTO Usuario (Primer_Nombre, Segundo_Nombre, Primer_Apellido, Segundo_Apellido, Correo, `Contraseña`, Edad, Rol_idRol) VALUES (?, ?, ?, ?, ?, ?, ?, ?)");
+            $stmt = $conn->prepare("INSERT INTO Tecnico (Primer_Nombre, Segundo_Nombre, Primer_Apellido, Segundo_Apellido, Correo, `Contraseña`, Edad, Rol_idRol) VALUES (?, ?, ?, ?, ?, ?, ?, ?)");
             if ($stmt) {
                 $stmt->bind_param('ssssssii', $primer_nombre, $segundo_nombre, $primer_apellido, $segundo_apellido, $correo, $contrasena, $edad, $rol_id);
                 if ($stmt->execute()) {
-                    echo "<div class='alert alert-success'>Usuario creado con éxito</div>";
+                    echo "<div class='alert alert-success'>Tecnico creado con éxito</div>";
                 } else {
                     error_log("Error creating user: " . $stmt->error);
-                    echo "<div class='alert alert-danger'>Error al crear usuario.</div>";
+                    echo "<div class='alert alert-danger'>Error al crear tecnico.</div>";
                 }
                 $stmt->close();
             } else {
@@ -92,13 +92,13 @@ if (isset($_POST['crear_usuario'])) {
     }
 }
 
-// Actualizar usuario
-if (isset($_POST['actualizar_usuario'])) {
+// Actualizar tecnico
+if (isset($_POST['actualizar_tecnico'])) {
     // CSRF protection
     if (!isset($_POST['csrf_token']) || !hash_equals($_SESSION['csrf_token'], $_POST['csrf_token'])) {
         echo "<div class='alert alert-danger'>Error de seguridad. Intente nuevamente.</div>";
     } else {
-        $id = (int)($_POST['id_usuario'] ?? 0);
+        $id = (int)($_POST['id_tecnico'] ?? 0);
         $primer_nombre = trim($_POST['primer_nombre'] ?? '');
         $segundo_nombre = trim($_POST['segundo_nombre'] ?? '');
         $primer_apellido = trim($_POST['primer_apellido'] ?? '');
@@ -116,17 +116,17 @@ if (isset($_POST['actualizar_usuario'])) {
         if ($rol_id < 1) $errors[] = "Rol inválido.";
 
         if (empty($errors)) {
-            $stmt = $conn->prepare("UPDATE Usuario SET
+            $stmt = $conn->prepare("UPDATE Tecnico SET
                     Primer_Nombre=?, Segundo_Nombre=?, Primer_Apellido=?, Segundo_Apellido=?,
-                    Correo=?, Edad=?, Rol_idRol=? WHERE idUsuario=?");
+                    Correo=?, Edad=?, Rol_idRol=? WHERE idTecnico=?");
             if ($stmt) {
                 $stmt->bind_param("sssssiii", $primer_nombre, $segundo_nombre, $primer_apellido,
                     $segundo_apellido, $correo, $edad, $rol_id, $id);
                 if ($stmt->execute()) {
-                    echo "<div class='alert alert-success'>Usuario actualizado con éxito</div>";
+                    echo "<div class='alert alert-success'>Tecnico actualizado con éxito</div>";
                 } else {
                     error_log("Error updating user: " . $stmt->error);
-                    echo "<div class='alert alert-danger'>Error al actualizar usuario.</div>";
+                    echo "<div class='alert alert-danger'>Error al actualizar tecnico.</div>";
                 }
                 $stmt->close();
             } else {
@@ -139,17 +139,17 @@ if (isset($_POST['actualizar_usuario'])) {
     }
 }
 
-// Eliminar usuario
+// Eliminar tecnico
 if (isset($_GET['eliminar'])) {
     $id = (int) $_GET['eliminar'];
     $conn->begin_transaction();
     $error = false;
 
     $stmts = [
-        "DELETE FROM Detalle_Diagnostico WHERE Arreglo_Usuario_idUsuario = ?",
-        "DELETE FROM Detalle_Arreglo WHERE Arreglo_Usuario_idUsuario = ?",
-        "DELETE FROM Arreglo WHERE Usuario_idUsuario = ?",
-        "DELETE FROM Usuario WHERE idUsuario = ?"
+        "DELETE FROM Detalle_Diagnostico WHERE Arreglo_Tecnico_idTecnico = ?",
+        "DELETE FROM Detalle_Arreglo WHERE Arreglo_Tecnico_idTecnico = ?",
+        "DELETE FROM Arreglo WHERE Tecnico_idTecnico = ?",
+        "DELETE FROM Tecnico WHERE idTecnico = ?"
     ];
 
     foreach ($stmts as $query) {
@@ -169,14 +169,14 @@ if (isset($_GET['eliminar'])) {
 
     if ($error) {
         $conn->rollback();
-        echo "<div class='alert alert-danger'>No se pudo eliminar el usuario: " . $conn->error . "</div>";
+        echo "<div class='alert alert-danger'>No se pudo eliminar el tecnico: " . $conn->error . "</div>";
     } else {
         $conn->commit();
-        echo "<div class='alert alert-success'>Usuario eliminado con éxito</div>";
+        echo "<div class='alert alert-success'>Tecnico eliminado con éxito</div>";
     }
 }
 
-$usuarios = obtenerUsuarios($conn);
+$tecnicos = obtenerTecnicos($conn);
 $roles = obtenerRoles($conn);
 ?>
 
@@ -186,7 +186,7 @@ $roles = obtenerRoles($conn);
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Usuarios</title>
+    <title>Tecnicos</title>
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.1.3/dist/css/bootstrap.min.css" rel="stylesheet">
     <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css" rel="stylesheet">
     <link href="estils.css" rel="stylesheet">
@@ -198,10 +198,10 @@ $roles = obtenerRoles($conn);
     <div class="container mt-4">
         <div class="card">
             <div class="card-header d-flex justify-content-between align-items-center">
-                <h2>Listar Usuarios</h2>
+                <h2>Listar Tecnicos</h2>
                 <button type="button" class="btn btn-primary" data-bs-toggle="modal"
-                    data-bs-target="#crearUsuarioModal">
-                    Crear Usuario
+                    data-bs-target="#crearTecnicoModal">
+                    Crear Tecnico
                 </button>
             </div>
             <div class="card-body">
@@ -219,22 +219,22 @@ $roles = obtenerRoles($conn);
                             </tr>
                         </thead>
                         <tbody>
-                            <?php foreach ($usuarios as $usuario): ?>
+                            <?php foreach ($tecnicos as $tecnico): ?>
                                 <tr>
-                                    <td><?php echo $usuario['idUsuario']; ?></td>
-                                    <td><?php echo $usuario['Primer_Nombre'] . ' ' . $usuario['Segundo_Nombre']; ?></td>
-                                    <td><?php echo $usuario['Primer_Apellido'] . ' ' . $usuario['Segundo_Apellido']; ?></td>
-                                    <td><?php echo $usuario['Correo']; ?></td>
-                                    <td><?php echo $usuario['Edad']; ?></td>
-                                    <td><?php echo $usuario['Nombre_Rol']; ?></td>
+                                    <td><?php echo $tecnico['idTecnico']; ?></td>
+                                    <td><?php echo $tecnico['Primer_Nombre'] . ' ' . $tecnico['Segundo_Nombre']; ?></td>
+                                    <td><?php echo $tecnico['Primer_Apellido'] . ' ' . $tecnico['Segundo_Apellido']; ?></td>
+                                    <td><?php echo $tecnico['Correo']; ?></td>
+                                    <td><?php echo $tecnico['Edad']; ?></td>
+                                    <td><?php echo $tecnico['Nombre_Rol']; ?></td>
                                     <td>
                                         <button type="button" class="btn btn-sm btn-warning" data-bs-toggle="modal"
-                                            data-bs-target="#editarUsuarioModal<?php echo $usuario['idUsuario']; ?>">
+                                            data-bs-target="#editarTecnicoModal<?php echo $tecnico['idTecnico']; ?>">
                                             Editar
                                         </button>
-                                        <a href="?eliminar=<?php echo $usuario['idUsuario']; ?>"
+                                        <a href="?eliminar=<?php echo $tecnico['idTecnico']; ?>"
                                             class="btn btn-sm btn-danger"
-                                            onclick="return confirm('¿Estás seguro de que quieres eliminar este usuario?')">Eliminar</a>
+                                            onclick="return confirm('¿Estás seguro de que quieres eliminar este tecnico?')">Eliminar</a>
                                     </td>
                                 </tr>
                             <?php endforeach; ?>
@@ -245,20 +245,20 @@ $roles = obtenerRoles($conn);
         </div>
     </div>
 
-    <!-- Modal para crear usuario -->
-    <div class="modal fade" id="crearUsuarioModal" tabindex="-1" aria-labelledby="crearUsuarioModalLabel"
+    <!-- Modal para crear tecnico -->
+    <div class="modal fade" id="crearTecnicoModal" tabindex="-1" aria-labelledby="crearTecnicoModalLabel"
         aria-hidden="true">
         <div class="modal-dialog">
             <div class="modal-content">
                 <div class="modal-header">
-                    <h5 class="modal-title" id="crearUsuarioModalLabel">Crear Nuevo Usuario</h5>
+                    <h5 class="modal-title" id="crearTecnicoModalLabel">Crear Nuevo Tecnico</h5>
                     <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
                 </div>
                 <div class="modal-body">
                     <form action="" method="post">
                         <input type="hidden" name="csrf_token" value="<?php echo htmlspecialchars($_SESSION['csrf_token']); ?>">
                         <div class="mb-3">
-                            <label for="primer_nombre" class="form-label">Primer Nombre</label>
+                            <label for="primer_nombre" class="form-label">Primer Nombre (*)</label>
                             <input type="text" class="form-control" id="primer_nombre" name="primer_nombre" required>
                         </div>
                         <div class="mb-3">
@@ -266,7 +266,7 @@ $roles = obtenerRoles($conn);
                             <input type="text" class="form-control" id="segundo_nombre" name="segundo_nombre">
                         </div>
                         <div class="mb-3">
-                            <label for="primer_apellido" class="form-label">Primer Apellido</label>
+                            <label for="primer_apellido" class="form-label">Primer Apellido (*)</label>
                             <input type="text" class="form-control" id="primer_apellido" name="primer_apellido" required>
                         </div>
                         <div class="mb-3">
@@ -274,11 +274,11 @@ $roles = obtenerRoles($conn);
                             <input type="text" class="form-control" id="segundo_apellido" name="segundo_apellido">
                         </div>
                         <div class="mb-3">
-                            <label for="correo" class="form-label">Correo</label>
+                            <label for="correo" class="form-label">Correo (*)</label>
                             <input type="email" class="form-control" id="correo" name="correo" required>
                         </div>
                         <div class="mb-3">
-                            <label for="contrasena" class="form-label">Contraseña</label>
+                            <label for="contrasena" class="form-label">Contraseña (*)</label>
                             <input type="password" class="form-control" id="contrasena" name="contrasena" required minlength="<?php echo PASSWORD_MIN_LENGTH; ?>">
                         </div>
                         <div class="mb-3">
@@ -286,85 +286,85 @@ $roles = obtenerRoles($conn);
                             <input type="number" class="form-control" id="edad" name="edad" required min="18" max="100">
                         </div>
                         <div class="mb-3">
-                            <label for="rol_id" class="form-label">Rol</label>
+                            <label for="rol_id" class="form-label">Rol (*)</label>
                             <select class="form-select" id="rol_id" name="rol_id" required>
                                 <?php foreach ($roles as $rol): ?>
                                     <option value="<?php echo htmlspecialchars($rol['idRol']); ?>"><?php echo htmlspecialchars($rol['Nombre_Rol']); ?></option>
                                 <?php endforeach; ?>
                             </select>
                         </div>
-                        <button type="submit" name="crear_usuario" class="btn btn-primary">Crear</button>
+                        <button type="submit" name="crear_tecnico" class="btn btn-primary">Crear</button>
                     </form>
                 </div>
             </div>
         </div>
     </div>
 
-    <!-- Modales para editar usuario -->
-    <?php foreach ($usuarios as $usuario): ?>
-        <div class="modal fade" id="editarUsuarioModal<?php echo $usuario['idUsuario']; ?>" tabindex="-1"
-            aria-labelledby="editarUsuarioModalLabel<?php echo $usuario['idUsuario']; ?>" aria-hidden="true">
+    <!-- Modales para editar tecnico -->
+    <?php foreach ($tecnicos as $tecnico): ?>
+        <div class="modal fade" id="editarTecnicoModal<?php echo $tecnico['idTecnico']; ?>" tabindex="-1"
+            aria-labelledby="editarTecnicoModalLabel<?php echo $tecnico['idTecnico']; ?>" aria-hidden="true">
             <div class="modal-dialog">
                 <div class="modal-content">
                     <div class="modal-header">
-                        <h5 class="modal-title" id="editarUsuarioModalLabel<?php echo $usuario['idUsuario']; ?>">Editar
-                            Usuario</h5>
+                        <h5 class="modal-title" id="editarTecnicoModalLabel<?php echo $tecnico['idTecnico']; ?>">Editar
+                            Tecnico</h5>
                         <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
                     </div>
                     <div class="modal-body">
                         <form action="" method="post">
                             <input type="hidden" name="csrf_token" value="<?php echo htmlspecialchars($_SESSION['csrf_token']); ?>">
-                            <input type="hidden" name="id_usuario" value="<?php echo $usuario['idUsuario']; ?>">
+                            <input type="hidden" name="id_tecnico" value="<?php echo $tecnico['idTecnico']; ?>">
                             <div class="mb-3">
-                                <label for="primer_nombre<?php echo $usuario['idUsuario']; ?>" class="form-label">Primer
+                                <label for="primer_nombre<?php echo $tecnico['idTecnico']; ?>" class="form-label">Primer
                                     Nombre</label>
                                 <input type="text" class="form-control"
-                                    id="primer_nombre<?php echo $usuario['idUsuario']; ?>" name="primer_nombre"
-                                    value="<?php echo htmlspecialchars($usuario['Primer_Nombre']); ?>" required>
+                                    id="primer_nombre<?php echo $tecnico['idTecnico']; ?>" name="primer_nombre"
+                                    value="<?php echo htmlspecialchars($tecnico['Primer_Nombre']); ?>" required>
                             </div>
                             <div class="mb-3">
-                                <label for="segundo_nombre<?php echo $usuario['idUsuario']; ?>" class="form-label">Segundo
+                                <label for="segundo_nombre<?php echo $tecnico['idTecnico']; ?>" class="form-label">Segundo
                                     Nombre</label>
                                 <input type="text" class="form-control"
-                                    id="segundo_nombre<?php echo $usuario['idUsuario']; ?>" name="segundo_nombre"
-                                    value="<?php echo htmlspecialchars($usuario['Segundo_Nombre']); ?>">
+                                    id="segundo_nombre<?php echo $tecnico['idTecnico']; ?>" name="segundo_nombre"
+                                    value="<?php echo htmlspecialchars($tecnico['Segundo_Nombre']); ?>">
                             </div>
                             <div class="mb-3">
-                                <label for="primer_apellido<?php echo $usuario['idUsuario']; ?>" class="form-label">Primer
+                                <label for="primer_apellido<?php echo $tecnico['idTecnico']; ?>" class="form-label">Primer
                                     Apellido</label>
                                 <input type="text" class="form-control"
-                                    id="primer_apellido<?php echo $usuario['idUsuario']; ?>" name="primer_apellido"
-                                    value="<?php echo htmlspecialchars($usuario['Primer_Apellido']); ?>" required>
+                                    id="primer_apellido<?php echo $tecnico['idTecnico']; ?>" name="primer_apellido"
+                                    value="<?php echo htmlspecialchars($tecnico['Primer_Apellido']); ?>" required>
                             </div>
                             <div class="mb-3">
-                                <label for="segundo_apellido<?php echo $usuario['idUsuario']; ?>" class="form-label">Segundo
+                                <label for="segundo_apellido<?php echo $tecnico['idTecnico']; ?>" class="form-label">Segundo
                                     Apellido</label>
                                 <input type="text" class="form-control"
-                                    id="segundo_apellido<?php echo $usuario['idUsuario']; ?>" name="segundo_apellido"
-                                    value="<?php echo htmlspecialchars($usuario['Segundo_Apellido']); ?>">
+                                    id="segundo_apellido<?php echo $tecnico['idTecnico']; ?>" name="segundo_apellido"
+                                    value="<?php echo htmlspecialchars($tecnico['Segundo_Apellido']); ?>">
                             </div>
                             <div class="mb-3">
-                                <label for="correo<?php echo $usuario['idUsuario']; ?>" class="form-label">Correo</label>
-                                <input type="email" class="form-control" id="correo<?php echo $usuario['idUsuario']; ?>"
-                                    name="correo" value="<?php echo htmlspecialchars($usuario['Correo']); ?>" required>
+                                <label for="correo<?php echo $tecnico['idTecnico']; ?>" class="form-label">Correo</label>
+                                <input type="email" class="form-control" id="correo<?php echo $tecnico['idTecnico']; ?>"
+                                    name="correo" value="<?php echo htmlspecialchars($tecnico['Correo']); ?>" required>
                             </div>
                             <div class="mb-3">
-                                <label for="edad<?php echo $usuario['idUsuario']; ?>" class="form-label">Edad</label>
-                                <input type="number" class="form-control" id="edad<?php echo $usuario['idUsuario']; ?>"
-                                    name="edad" value="<?php echo $usuario['Edad']; ?>" required>
+                                <label for="edad<?php echo $tecnico['idTecnico']; ?>" class="form-label">Edad</label>
+                                <input type="number" class="form-control" id="edad<?php echo $tecnico['idTecnico']; ?>"
+                                    name="edad" value="<?php echo $tecnico['Edad']; ?>" required>
                             </div>
                             <div class="mb-3">
-                                <label for="rol_id<?php echo $usuario['idUsuario']; ?>" class="form-label">Rol</label>
-                                <select class="form-select" id="rol_id<?php echo $usuario['idUsuario']; ?>" name="rol_id"
+                                <label for="rol_id<?php echo $tecnico['idTecnico']; ?>" class="form-label">Rol</label>
+                                <select class="form-select" id="rol_id<?php echo $tecnico['idTecnico']; ?>" name="rol_id"
                                     required>
                                     <?php foreach ($roles as $rol): ?>
-                                        <option value="<?php echo $rol['idRol']; ?>" <?php echo ($rol['idRol'] == $usuario['Rol_idRol']) ? 'selected' : ''; ?>>
+                                        <option value="<?php echo $rol['idRol']; ?>" <?php echo ($rol['idRol'] == $tecnico['Rol_idRol']) ? 'selected' : ''; ?>>
                                             <?php echo $rol['Nombre_Rol']; ?>
                                         </option>
                                     <?php endforeach; ?>
                                 </select>
                             </div>
-                            <button type="submit" name="actualizar_usuario" class="btn btn-primary">Actualizar</button>
+                            <button type="submit" name="actualizar_tecnico" class="btn btn-primary">Actualizar</button>
                         </form>
                     </div>
                 </div>

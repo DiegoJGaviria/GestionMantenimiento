@@ -14,7 +14,7 @@
         </li>
         <?php if (isset($_SESSION['rol_nombre']) && $_SESSION['rol_nombre'] === 'Administrador'): ?>
         <li class="nav-item">
-          <a class="nav-link" href="usuarios.php">Usuarios</a>
+          <a class="nav-link" href="tecnicos.php">Tecnicos</a>
         </li>
         <li class="nav-item">
           <a class="nav-link" href="marca.php">Marcas</a>
@@ -31,19 +31,19 @@
         </li>
       </ul>
       <ul class="navbar-nav ms-auto">
-        <?php if (isset($_SESSION['usuario'])): ?>
+        <?php if (isset($_SESSION['tecnico'])): ?>
         <li class="nav-item dropdown">
           <a class="nav-link dropdown-toggle d-flex align-items-center" href="#" id="profileDropdown" role="button" data-bs-toggle="dropdown" aria-expanded="false">
             <i class="bi bi-person-circle me-1"></i>
-            <?php echo htmlspecialchars($_SESSION['usuario']); ?>
+            <?php echo htmlspecialchars($_SESSION['tecnico']); ?>
           </a>
           <ul class="dropdown-menu dropdown-menu-end" aria-labelledby="profileDropdown">
-            <li><span class="dropdown-item-text">Rol: <?php echo htmlspecialchars($_SESSION['rol_nombre'] ?? 'Usuario'); ?></span></li>
+            <li><span class="dropdown-item-text">Rol: <?php echo htmlspecialchars($_SESSION['rol_nombre'] ?? 'Tecnico'); ?></span></li>
             <?php if (isset($_SESSION['rol_nombre']) && $_SESSION['rol_nombre'] === 'Administrador'): ?>
-            <li><a class="dropdown-item" href="usuarios.php">Administrar usuarios</a></li>
-            <li><a class="dropdown-item" href="usuarios.php">Gestionar cuentas</a></li>
+            <li><a class="dropdown-item" href="tecnicos.php">Administrar tecnicos</a></li>
+            <li><a class="dropdown-item" href="tecnicos.php">Gestionar cuentas</a></li>
             <?php endif; ?>
-            <li><a class="dropdown-item" href="logout.php">Cerrar sesión</a></li>
+            <li><a class="dropdown-item" href=" ">Cerrar sesión</a></li>
           </ul>
         </li>
         <?php endif; ?>

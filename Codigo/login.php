@@ -19,7 +19,7 @@ if (empty($_SESSION['csrf_token'])) {
 }
 
 // Redirect if already logged in
-if (isset($_SESSION['usuario'])) {
+if (isset($_SESSION['tecnico'])) {
     header("Location: index.php");
     exit();
 }
@@ -46,7 +46,7 @@ if ($_SERVER["REQUEST_METHOD"] === "POST") {
             $error = ERROR_INVALID_EMAIL;
         } else {
             // Database query with prepared statement
-            $stmt = $conn->prepare("SELECT u.idUsuario, u.Primer_Nombre, u.Primer_Apellido, u.`Contraseña`, u.Rol_idRol, r.Nombre_Rol FROM Usuario u LEFT JOIN Rol r ON u.Rol_idRol = r.idRol WHERE u.Correo = ? LIMIT 1");
+            $stmt = $conn->prepare("SELECT u.idTecnico, u.Primer_Nombre, u.Primer_Apellido, u.`Contraseña`, u.Rol_idRol, r.Nombre_Rol FROM Tecnico u LEFT JOIN Rol r ON u.Rol_idRol = r.idRol WHERE u.Correo = ? LIMIT 1");
             if ($stmt) {
                 $stmt->bind_param('s', $correo);
                 $stmt->execute();
@@ -58,17 +58,17 @@ if ($_SERVER["REQUEST_METHOD"] === "POST") {
                     // Verify password allowing plain text or previously hashed values
                     if ($storedPassword === $password || password_verify($password, $storedPassword)) {
                         // Set session variables
-                        $_SESSION['usuario'] = $fila['Primer_Nombre'] . ' ' . $fila['Primer_Apellido'];
-                        $_SESSION['idUsuario'] = $fila['idUsuario'];
+                        $_SESSION['tecnico'] = $fila['Primer_Nombre'] . ' ' . $fila['Primer_Apellido'];
+                        $_SESSION['idTecnico'] = $fila['idTecnico'];
                         $_SESSION['idRol'] = $fila['Rol_idRol'];
-                        $_SESSION['rol_nombre'] = $fila['Nombre_Rol'] ?: 'Usuario';
+                        $_SESSION['rol_nombre'] = $fila['Nombre_Rol'] ?: 'Tecnico';
 
                         // Regenerate session ID for security
                         session_regenerate_id(true);
 
                         // Log successful login
                         include_once 'logger.php';
-                        logAuthEvent('LOGIN_SUCCESS', 'Usuario autenticado exitosamente', $correo);
+                        logAuthEvent('LOGIN_SUCCESS', 'Tecnico autenticado exitosamente', $correo);
 
                         header("Location: index.php");
                         exit();

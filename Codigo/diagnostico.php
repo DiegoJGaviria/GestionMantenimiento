@@ -18,7 +18,7 @@ function obtenerDetallesDiagnostico($conn, $idDiagnostico) {
             FROM Detalle_Diagnostico dd 
             JOIN Arreglo a ON dd.Arreglo_idArreglo = a.idArreglo 
             JOIN Marca m ON dd.Arreglo_Marca_idMarca = m.idMarca 
-            JOIN Usuario u ON dd.Arreglo_Usuario_idUsuario = u.idUsuario 
+            JOIN Tecnico u ON dd.Arreglo_Tecnico_idTecnico = u.idTecnico 
             WHERE dd.Diagnostico_idDiagnostico = ?";
     $stmt = $conn->prepare($sql);
     $stmt->bind_param("i", $idDiagnostico);
@@ -32,7 +32,7 @@ function obtenerArreglos($conn) {
     $sql = "SELECT a.*, m.Nombre_Marca, u.Primer_Nombre, u.Primer_Apellido 
             FROM Arreglo a 
             JOIN Marca m ON a.Marca_idMarca = m.idMarca 
-            JOIN Usuario u ON a.Usuario_idUsuario = u.idUsuario";
+            JOIN Tecnico u ON a.Tecnico_idTecnico = u.idTecnico";
     $result = $conn->query($sql);
     return $result->fetch_all(MYSQLI_ASSOC);
 }
@@ -52,10 +52,10 @@ if (isset($_POST['crear_diagnostico'])) {
         foreach ($detalles as $detalle) {
             $arreglo_id = $detalle['arreglo_id'];
             $marca_id = $detalle['marca_id'];
-            $usuario_id = $detalle['usuario_id'];
+            $tecnico_id = $detalle['tecnico_id'];
             $cantidad = $detalle['cantidad'];
-            $stmt_detalle = $conn->prepare("INSERT INTO Detalle_Diagnostico (Arreglo_idArreglo, Arreglo_Marca_idMarca, Arreglo_Usuario_idUsuario, Diagnostico_idDiagnostico, Cantidad) VALUES (?, ?, ?, ?, ?)");
-            $stmt_detalle->bind_param("iiiii", $arreglo_id, $marca_id, $usuario_id, $diagnostico_id, $cantidad);
+            $stmt_detalle = $conn->prepare("INSERT INTO Detalle_Diagnostico (Arreglo_idArreglo, Arreglo_Marca_idMarca, Arreglo_Tecnico_idTecnico, Diagnostico_idDiagnostico, Cantidad) VALUES (?, ?, ?, ?, ?)");
+            $stmt_detalle->bind_param("iiiii", $arreglo_id, $marca_id, $tecnico_id, $diagnostico_id, $cantidad);
             $stmt_detalle->execute();
         }
         echo "<div class='alert alert-success'>Diagnóstico creado con éxito</div>";
@@ -85,10 +85,10 @@ if (isset($_POST['actualizar_diagnostico'])) {
         foreach ($detalles as $detalle) {
             $arreglo_id = $detalle['arreglo_id'];
             $marca_id = $detalle['marca_id'];
-            $usuario_id = $detalle['usuario_id'];
+            $tecnico_id = $detalle['tecnico_id'];
             $cantidad = $detalle['cantidad'];
-            $stmt_detalle = $conn->prepare("INSERT INTO Detalle_Diagnostico (Arreglo_idArreglo, Arreglo_Marca_idMarca, Arreglo_Usuario_idUsuario, Diagnostico_idDiagnostico, Cantidad) VALUES (?, ?, ?, ?, ?)");
-            $stmt_detalle->bind_param("iiiii", $arreglo_id, $marca_id, $usuario_id, $id, $cantidad);
+            $stmt_detalle = $conn->prepare("INSERT INTO Detalle_Diagnostico (Arreglo_idArreglo, Arreglo_Marca_idMarca, Arreglo_Tecnico_idTecnico, Diagnostico_idDiagnostico, Cantidad) VALUES (?, ?, ?, ?, ?)");
+            $stmt_detalle->bind_param("iiiii", $arreglo_id, $marca_id, $tecnico_id, $id, $cantidad);
             $stmt_detalle->execute();
         }
         echo "<div class='alert alert-success'>Diagnóstico actualizado con éxito</div>";
@@ -260,7 +260,7 @@ $arreglos = obtenerArreglos($conn);
                                     <td>
                                         <select class="form-select arreglo-select" name="arreglo_id[]" required>
                                             <?php foreach ($arreglos as $arreglo): ?>
-                                                <option value="<?php echo $arreglo['idArreglo']; ?>" data-marca="<?php echo $arreglo['Marca_idMarca']; ?>" data-usuario="<?php echo $arreglo['Usuario_idUsuario']; ?>" <?php echo ($arreglo['idArreglo'] == $detalle['Arreglo_idArreglo']) ? 'selected' : ''; ?>>
+                                                <option value="<?php echo $arreglo['idArreglo']; ?>" data-marca="<?php echo $arreglo['Marca_idMarca']; ?>" data-tecnico="<?php echo $arreglo['Tecnico_idTecnico']; ?>" <?php echo ($arreglo['idArreglo'] == $detalle['Arreglo_idArreglo']) ? 'selected' : ''; ?>>
                                                     <?php echo $arreglo['Nombre_Arreglo'] . ' - ' . $arreglo['Nombre_Marca'] . ' - ' . $arreglo['Primer_Nombre'] . ' ' . $arreglo['Primer_Apellido']; ?>
                                                 </option>
                                             <?php endforeach; ?>
@@ -294,7 +294,7 @@ $arreglos = obtenerArreglos($conn);
                 <td>
                     <select class="form-select arreglo-select" name="arreglo_id[]" required>
                         <?php foreach ($arreglos as $arreglo): ?>
-                            <option value="<?php echo $arreglo['idArreglo']; ?>" data-marca="<?php echo $arreglo['Marca_idMarca']; ?>" data-usuario="<?php echo $arreglo['Usuario_idUsuario']; ?>">
+                            <option value="<?php echo $arreglo['idArreglo']; ?>" data-marca="<?php echo $arreglo['Marca_idMarca']; ?>" data-tecnico="<?php echo $arreglo['Tecnico_idTecnico']; ?>">
                                 <?php echo $arreglo['Nombre_Arreglo'] . ' - ' . $arreglo['Nombre_Marca'] . ' - ' . $arreglo['Primer_Nombre'] . ' ' . $arreglo['Primer_Apellido']; ?>
                             </option>
                         <?php endforeach; ?>
@@ -324,9 +324,9 @@ $arreglos = obtenerArreglos($conn);
                 const arregloSelect = rows[i].querySelector('.arreglo-select');
                 const arregloId = arregloSelect.value;
                 const marcaId = arregloSelect.options[arregloSelect.selectedIndex].dataset.marca;
-                const usuarioId = arregloSelect.options[arregloSelect.selectedIndex].dataset.usuario;
+                const tecnicoId = arregloSelect.options[arregloSelect.selectedIndex].dataset.tecnico;
                 const cantidad = rows[i].querySelector('.cantidad-input').value;
-                detalles.push({ arreglo_id: arregloId, marca_id: marcaId, usuario_id: usuarioId, cantidad: cantidad });
+                detalles.push({ arreglo_id: arregloId, marca_id: marcaId, tecnico_id: tecnicoId, cantidad: cantidad });
             }
 
             const inputId = diagnosticoId ? `detalles_diagnostico${diagnosticoId}` : 'detalles_diagnostico';

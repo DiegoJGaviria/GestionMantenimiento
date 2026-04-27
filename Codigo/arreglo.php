@@ -28,7 +28,7 @@ function obtenerArreglos($conn, $estadoColumn)
                         LIMIT 1) AS Nombre_Cliente
                 FROM Arreglo a 
                 JOIN Marca m ON a.Marca_idMarca = m.idMarca 
-                JOIN Usuario u ON a.Usuario_idUsuario = u.idUsuario";
+                JOIN Tecnico u ON a.Tecnico_idTecnico = u.idTecnico";
     } else {
         $sql = "SELECT a.*, m.Nombre_Marca, u.Primer_Nombre, u.Primer_Apellido, 
                        (SELECT CONCAT(c.Primer_Nombre, ' ', c.Primer_Apellido)
@@ -38,7 +38,7 @@ function obtenerArreglos($conn, $estadoColumn)
                         LIMIT 1) AS Nombre_Cliente
                 FROM Arreglo a 
                 JOIN Marca m ON a.Marca_idMarca = m.idMarca 
-                JOIN Usuario u ON a.Usuario_idUsuario = u.idUsuario";
+                JOIN Tecnico u ON a.Tecnico_idTecnico = u.idTecnico";
     }
     $result = $conn->query($sql);
     return $result->fetch_all(MYSQLI_ASSOC);
@@ -66,10 +66,10 @@ function obtenerMarcas($conn)
     return $result->fetch_all(MYSQLI_ASSOC);
 }
 
-// Función para obtener usuarios
-function obtenerUsuarios($conn)
+// Función para obtener tecnicos
+function obtenerTecnicos($conn)
 {
-    $sql = "SELECT * FROM Usuario";
+    $sql = "SELECT * FROM Tecnico";
     $result = $conn->query($sql);
     return $result->fetch_all(MYSQLI_ASSOC);
 }
@@ -96,15 +96,15 @@ if (isset($_POST['crear_arreglo'])) {
         $fecha_recibido = $_POST['fecha_recibido'];
         $fecha_entrega = $_POST['fecha_entrega'];
         $marca_id = $_POST['marca_id'];
-        $usuario_id = $_POST['usuario_id'];
+        $tecnico_id = $_POST['tecnico_id'];
         $estado_arreglo = $_POST['estado_arreglo'] ?? 'Pendiente';
 
         if ($estadoColumn) {
-            $stmt = $conn->prepare("INSERT INTO Arreglo (Tipo_Arreglo, Nombre_Arreglo, Descripcion_Cliente, Valor_Pago, Estado_Arreglo, Fecha_Recibido, Fecha_Entrega, Marca_idMarca, Usuario_idUsuario) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)");
-            $stmt->bind_param("sssdsssii", $tipo_arreglo, $nombre_arreglo, $descripcion_cliente, $valor_pago, $estado_arreglo, $fecha_recibido, $fecha_entrega, $marca_id, $usuario_id);
+            $stmt = $conn->prepare("INSERT INTO Arreglo (Tipo_Arreglo, Nombre_Arreglo, Descripcion_Cliente, Valor_Pago, Estado_Arreglo, Fecha_Recibido, Fecha_Entrega, Marca_idMarca, Tecnico_idTecnico) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)");
+            $stmt->bind_param("sssdsssii", $tipo_arreglo, $nombre_arreglo, $descripcion_cliente, $valor_pago, $estado_arreglo, $fecha_recibido, $fecha_entrega, $marca_id, $tecnico_id);
         } else {
-            $stmt = $conn->prepare("INSERT INTO Arreglo (Tipo_Arreglo, Nombre_Arreglo, Descripcion_Cliente, Valor_Pago, Fecha_Recibido, Fecha_Entrega, Marca_idMarca, Usuario_idUsuario) VALUES (?, ?, ?, ?, ?, ?, ?, ?)");
-            $stmt->bind_param("sssdssii", $tipo_arreglo, $nombre_arreglo, $descripcion_cliente, $valor_pago, $fecha_recibido, $fecha_entrega, $marca_id, $usuario_id);
+            $stmt = $conn->prepare("INSERT INTO Arreglo (Tipo_Arreglo, Nombre_Arreglo, Descripcion_Cliente, Valor_Pago, Fecha_Recibido, Fecha_Entrega, Marca_idMarca, Tecnico_idTecnico) VALUES (?, ?, ?, ?, ?, ?, ?, ?)");
+            $stmt->bind_param("sssdssii", $tipo_arreglo, $nombre_arreglo, $descripcion_cliente, $valor_pago, $fecha_recibido, $fecha_entrega, $marca_id, $tecnico_id);
         }
 
         if ($stmt && $stmt->execute()) {
@@ -113,8 +113,8 @@ if (isset($_POST['crear_arreglo'])) {
             foreach ($detalles as $detalle) {
                 $cliente_id = $detalle['cliente_id'];
                 $cantidad = $detalle['cantidad'];
-                $stmt_detalle = $conn->prepare("INSERT INTO Detalle_Arreglo (Cliente_idCliente, Arreglo_idArreglo, Arreglo_Marca_idMarca, Arreglo_Usuario_idUsuario, Cantidad) VALUES (?, ?, ?, ?, ?)");
-                $stmt_detalle->bind_param("iiiii", $cliente_id, $arreglo_id, $marca_id, $usuario_id, $cantidad);
+                $stmt_detalle = $conn->prepare("INSERT INTO Detalle_Arreglo (Cliente_idCliente, Arreglo_idArreglo, Arreglo_Marca_idMarca, Arreglo_Tecnico_idTecnico, Cantidad) VALUES (?, ?, ?, ?, ?)");
+                $stmt_detalle->bind_param("iiiii", $cliente_id, $arreglo_id, $marca_id, $tecnico_id, $cantidad);
                 $stmt_detalle->execute();
             }
             $mensaje = "<div class='alert alert-success'>Arreglo creado con éxito</div>";
@@ -137,15 +137,15 @@ if (isset($_POST['actualizar_arreglo'])) {
         $fecha_recibido = $_POST['fecha_recibido'];
         $fecha_entrega = $_POST['fecha_entrega'];
         $marca_id = $_POST['marca_id'];
-        $usuario_id = $_POST['usuario_id'];
+        $tecnico_id = $_POST['tecnico_id'];
         $estado_arreglo = $_POST['estado_arreglo'] ?? 'Pendiente';
 
         if ($estadoColumn) {
-            $stmt = $conn->prepare("UPDATE Arreglo SET Tipo_Arreglo=?, Nombre_Arreglo=?, Descripcion_Cliente=?, Valor_Pago=?, Estado_Arreglo=?, Fecha_Recibido=?, Fecha_Entrega=?, Marca_idMarca=?, Usuario_idUsuario=? WHERE idArreglo=?");
-            $stmt->bind_param("sssdsssiii", $tipo_arreglo, $nombre_arreglo, $descripcion_cliente, $valor_pago, $estado_arreglo, $fecha_recibido, $fecha_entrega, $marca_id, $usuario_id, $id);
+            $stmt = $conn->prepare("UPDATE Arreglo SET Tipo_Arreglo=?, Nombre_Arreglo=?, Descripcion_Cliente=?, Valor_Pago=?, Estado_Arreglo=?, Fecha_Recibido=?, Fecha_Entrega=?, Marca_idMarca=?, Tecnico_idTecnico=? WHERE idArreglo=?");
+            $stmt->bind_param("sssdsssiii", $tipo_arreglo, $nombre_arreglo, $descripcion_cliente, $valor_pago, $estado_arreglo, $fecha_recibido, $fecha_entrega, $marca_id, $tecnico_id, $id);
         } else {
-            $stmt = $conn->prepare("UPDATE Arreglo SET Tipo_Arreglo=?, Nombre_Arreglo=?, Descripcion_Cliente=?, Valor_Pago=?, Fecha_Recibido=?, Fecha_Entrega=?, Marca_idMarca=?, Usuario_idUsuario=? WHERE idArreglo=?");
-            $stmt->bind_param("sssdssiii", $tipo_arreglo, $nombre_arreglo, $descripcion_cliente, $valor_pago, $fecha_recibido, $fecha_entrega, $marca_id, $usuario_id, $id);
+            $stmt = $conn->prepare("UPDATE Arreglo SET Tipo_Arreglo=?, Nombre_Arreglo=?, Descripcion_Cliente=?, Valor_Pago=?, Fecha_Recibido=?, Fecha_Entrega=?, Marca_idMarca=?, Tecnico_idTecnico=? WHERE idArreglo=?");
+            $stmt->bind_param("sssdssiii", $tipo_arreglo, $nombre_arreglo, $descripcion_cliente, $valor_pago, $fecha_recibido, $fecha_entrega, $marca_id, $tecnico_id, $id);
         }
 
         if ($stmt && $stmt->execute()) {
@@ -159,8 +159,8 @@ if (isset($_POST['actualizar_arreglo'])) {
             foreach ($detalles as $detalle) {
                 $cliente_id = $detalle['cliente_id'];
                 $cantidad = $detalle['cantidad'];
-                $stmt_detalle = $conn->prepare("INSERT INTO Detalle_Arreglo (Cliente_idCliente, Arreglo_idArreglo, Arreglo_Marca_idMarca, Arreglo_Usuario_idUsuario, Cantidad) VALUES (?, ?, ?, ?, ?)");
-                $stmt_detalle->bind_param("iiiii", $cliente_id, $id, $marca_id, $usuario_id, $cantidad);
+                $stmt_detalle = $conn->prepare("INSERT INTO Detalle_Arreglo (Cliente_idCliente, Arreglo_idArreglo, Arreglo_Marca_idMarca, Arreglo_Tecnico_idTecnico, Cantidad) VALUES (?, ?, ?, ?, ?)");
+                $stmt_detalle->bind_param("iiiii", $cliente_id, $id, $marca_id, $tecnico_id, $cantidad);
                 $stmt_detalle->execute();
             }
             $mensaje = "<div class='alert alert-success'>Arreglo actualizado con éxito</div>";
@@ -214,7 +214,7 @@ if (isset($_GET['eliminar'])) {
 
 $arreglos = obtenerArreglos($conn, $estadoColumn);
 $marcas = obtenerMarcas($conn);
-$usuarios = obtenerUsuarios($conn);
+$tecnicos = obtenerTecnicos($conn);
 $clientes = obtenerClientes($conn);
 ?>
 
@@ -258,7 +258,7 @@ $clientes = obtenerClientes($conn);
                                 <th>Fecha Entrega</th>
                                 <th>Estado</th>
                                 <th>Marca</th>
-                                <th>Usuario</th>
+                                <th>Tecnico</th>
                                 <th>Cliente</th>
                                 <th>Acciones</th>
                             </tr>
@@ -366,11 +366,11 @@ $clientes = obtenerClientes($conn);
                                 </select>
                             </div>
                             <div class="col-md-6">
-                                <label for="usuario_id" class="form-label">Usuario</label>
-                                <select class="form-select" id="usuario_id" name="usuario_id" required>
-                                    <?php foreach ($usuarios as $usuario): ?>
-                                        <option value="<?php echo $usuario['idUsuario']; ?>">
-                                            <?php echo $usuario['Primer_Nombre'] . ' ' . $usuario['Primer_Apellido']; ?>
+                                <label for="tecnico_id" class="form-label">Tecnico</label>
+                                <select class="form-select" id="tecnico_id" name="tecnico_id" required>
+                                    <?php foreach ($tecnicos as $tecnico): ?>
+                                        <option value="<?php echo $tecnico['idTecnico']; ?>">
+                                            <?php echo $tecnico['Primer_Nombre'] . ' ' . $tecnico['Primer_Apellido']; ?>
                                         </option>
                                     <?php endforeach; ?>
                                 </select>
@@ -487,13 +487,13 @@ $clientes = obtenerClientes($conn);
                                         </select>
                                     </div>
                                     <div class="col-md-6">
-                                        <label for="usuario_id<?php echo $arreglo['idArreglo']; ?>"
-                                            class="form-label">Usuario</label>
-                                        <select class="form-select" id="usuario_id<?php echo $arreglo['idArreglo']; ?>"
-                                            name="usuario_id" required>
-                                            <?php foreach ($usuarios as $usuario): ?>
-                                                <option value="<?php echo $usuario['idUsuario']; ?>" <?php echo ($usuario['idUsuario'] == $arreglo['Usuario_idUsuario']) ? 'selected' : ''; ?>>
-                                                    <?php echo $usuario['Primer_Nombre'] . ' ' . $usuario['Primer_Apellido']; ?>
+                                        <label for="tecnico_id<?php echo $arreglo['idArreglo']; ?>"
+                                            class="form-label">Tecnico</label>
+                                        <select class="form-select" id="tecnico_id<?php echo $arreglo['idArreglo']; ?>"
+                                            name="tecnico_id" required>
+                                            <?php foreach ($tecnicos as $tecnico): ?>
+                                                <option value="<?php echo $tecnico['idTecnico']; ?>" <?php echo ($tecnico['idTecnico'] == $arreglo['Tecnico_idTecnico']) ? 'selected' : ''; ?>>
+                                                    <?php echo $tecnico['Primer_Nombre'] . ' ' . $tecnico['Primer_Apellido']; ?>
                                                 </option>
                                             <?php endforeach; ?>
                                         </select>

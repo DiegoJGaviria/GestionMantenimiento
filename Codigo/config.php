@@ -7,7 +7,7 @@
 // Database configuration
 define('DB_HOST', 'localhost');
 define('DB_USER', 'root');
-define('DB_PASS', 'DjGr1999*'); // WARNING: Change this in production!
+define('DB_PASS', '140226'); // WARNING: Change this in production!
 define('DB_NAME', 'sistema_arreglo_computadores');
 
 // Application configuration
@@ -16,7 +16,7 @@ define('APP_VERSION', '1.0.0');
 define('APP_ENV', 'development'); // Change to 'production' in production
 
 // Security settings
-define('SESSION_LIFETIME', 3600); // 1 hour
+define('SESSION_LIFETIME', 10); // 1 hour
 define('CSRF_TOKEN_LENGTH', 32);
 define('PASSWORD_MIN_LENGTH', 8);
 
