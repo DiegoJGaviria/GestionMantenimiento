@@ -42,22 +42,16 @@ if (isset($_POST['crear_tecnico'])) {
     if (!isset($_POST['csrf_token']) || !hash_equals($_SESSION['csrf_token'], $_POST['csrf_token'])) {
         echo "<div class='alert alert-danger'>Error de seguridad. Intente nuevamente.</div>";
     } else {
-        $primer_nombre = trim($_POST['primer_nombre'] ?? '');
-        $segundo_nombre = trim($_POST['segundo_nombre'] ?? '');
-        $primer_apellido = trim($_POST['primer_apellido'] ?? '');
-        $segundo_apellido = trim($_POST['segundo_apellido'] ?? '');
+        $nombre_tecnico = trim($_POST['nombre_tecnico'] ?? '');
         $correo = trim($_POST['correo'] ?? '');
         $contrasena = $_POST['contrasena'] ?? '';
-        $edad = (int)($_POST['edad'] ?? 0);
         $rol_id = (int)($_POST['rol_id'] ?? 0);
 
         // Validation
         $errors = [];
-        if (empty($primer_nombre)) $errors[] = "Primer nombre es obligatorio.";
-        if (empty($primer_apellido)) $errors[] = "Primer apellido es obligatorio.";
+        if (empty($nombre_tecnico)) $errors[] = "Nombre del técnico es obligatorio.";
         if (!filter_var($correo, FILTER_VALIDATE_EMAIL)) $errors[] = "Correo electrónico inválido.";
         if (strlen($contrasena) < PASSWORD_MIN_LENGTH) $errors[] = "La contraseña debe tener al menos " . PASSWORD_MIN_LENGTH . " caracteres.";
-        if ($edad < 18 || $edad > 100) $errors[] = "Edad debe estar entre 18 y 100 años.";
         if ($rol_id < 1) $errors[] = "Rol inválido.";
 
         // Check if email already exists
@@ -72,9 +66,9 @@ if (isset($_POST['crear_tecnico'])) {
         }
 
         if (empty($errors)) {
-            $stmt = $conn->prepare("INSERT INTO Tecnico (Primer_Nombre, Segundo_Nombre, Primer_Apellido, Segundo_Apellido, Correo, `Contraseña`, Edad, Rol_idRol) VALUES (?, ?, ?, ?, ?, ?, ?, ?)");
+            $stmt = $conn->prepare("INSERT INTO Tecnico (Nombre_Tecnico, Correo, `Contraseña`, Rol_idRol) VALUES (?, ?, ?, ?)");
             if ($stmt) {
-                $stmt->bind_param('ssssssii', $primer_nombre, $segundo_nombre, $primer_apellido, $segundo_apellido, $correo, $contrasena, $edad, $rol_id);
+                $stmt->bind_param('sssi', $nombre_tecnico, $correo, $contrasena, $rol_id);
                 if ($stmt->execute()) {
                     echo "<div class='alert alert-success'>Tecnico creado con éxito</div>";
                 } else {
@@ -99,29 +93,21 @@ if (isset($_POST['actualizar_tecnico'])) {
         echo "<div class='alert alert-danger'>Error de seguridad. Intente nuevamente.</div>";
     } else {
         $id = (int)($_POST['id_tecnico'] ?? 0);
-        $primer_nombre = trim($_POST['primer_nombre'] ?? '');
-        $segundo_nombre = trim($_POST['segundo_nombre'] ?? '');
-        $primer_apellido = trim($_POST['primer_apellido'] ?? '');
-        $segundo_apellido = trim($_POST['segundo_apellido'] ?? '');
+        $nombre_tecnico = trim($_POST['nombre_tecnico'] ?? '');
         $correo = trim($_POST['correo'] ?? '');
-        $edad = (int)($_POST['edad'] ?? 0);
         $rol_id = (int)($_POST['rol_id'] ?? 0);
 
         // Validation
         $errors = [];
-        if (empty($primer_nombre)) $errors[] = "Primer nombre es obligatorio.";
-        if (empty($primer_apellido)) $errors[] = "Primer apellido es obligatorio.";
+        if (empty($nombre_tecnico)) $errors[] = "nombre del tecnico es obligatorio.";
         if (!filter_var($correo, FILTER_VALIDATE_EMAIL)) $errors[] = "Correo electrónico inválido.";
-        if ($edad < 18 || $edad > 100) $errors[] = "Edad debe estar entre 18 y 100 años.";
         if ($rol_id < 1) $errors[] = "Rol inválido.";
 
         if (empty($errors)) {
             $stmt = $conn->prepare("UPDATE Tecnico SET
-                    Primer_Nombre=?, Segundo_Nombre=?, Primer_Apellido=?, Segundo_Apellido=?,
-                    Correo=?, Edad=?, Rol_idRol=? WHERE idTecnico=?");
+                    Nombre_Tecnico=?,Correo=?, Rol_idRol=? WHERE idTecnico=?");
             if ($stmt) {
-                $stmt->bind_param("sssssiii", $primer_nombre, $segundo_nombre, $primer_apellido,
-                    $segundo_apellido, $correo, $edad, $rol_id, $id);
+                $stmt->bind_param("ssii", $nombre_tecnico, $correo, $rol_id, $id);
                 if ($stmt->execute()) {
                     echo "<div class='alert alert-success'>Tecnico actualizado con éxito</div>";
                 } else {
@@ -146,9 +132,14 @@ if (isset($_GET['eliminar'])) {
     $error = false;
 
     $stmts = [
-        "DELETE FROM Detalle_Diagnostico WHERE Arreglo_Tecnico_idTecnico = ?",
-        "DELETE FROM Detalle_Arreglo WHERE Arreglo_Tecnico_idTecnico = ?",
+        // Primero eliminar los detalles asociados a los arreglos del técnico
+        "DELETE FROM Detalle_Arreglo WHERE Arreglo_idArreglo IN (SELECT idArreglo FROM Arreglo WHERE Tecnico_idTecnico = ?)",
+        "DELETE FROM Detalle_Diagnostico WHERE Arreglo_idArreglo IN (SELECT idArreglo FROM Arreglo WHERE Tecnico_idTecnico = ?)",
+
+        // Luego eliminar los arreglos del técnico
         "DELETE FROM Arreglo WHERE Tecnico_idTecnico = ?",
+
+        // Finalmente eliminar el técnico
         "DELETE FROM Tecnico WHERE idTecnico = ?"
     ];
 
@@ -169,12 +160,13 @@ if (isset($_GET['eliminar'])) {
 
     if ($error) {
         $conn->rollback();
-        echo "<div class='alert alert-danger'>No se pudo eliminar el tecnico: " . $conn->error . "</div>";
+        echo "<div class='alert alert-danger'>No se pudo eliminar el técnico: " . $conn->error . "</div>";
     } else {
         $conn->commit();
-        echo "<div class='alert alert-success'>Tecnico eliminado con éxito</div>";
+        echo "<div class='alert alert-success'>Técnico eliminado con éxito</div>";
     }
 }
+
 
 $tecnicos = obtenerTecnicos($conn);
 $roles = obtenerRoles($conn);
@@ -222,10 +214,8 @@ $roles = obtenerRoles($conn);
                             <?php foreach ($tecnicos as $tecnico): ?>
                                 <tr>
                                     <td><?php echo $tecnico['idTecnico']; ?></td>
-                                    <td><?php echo $tecnico['Primer_Nombre'] . ' ' . $tecnico['Segundo_Nombre']; ?></td>
-                                    <td><?php echo $tecnico['Primer_Apellido'] . ' ' . $tecnico['Segundo_Apellido']; ?></td>
+                                    <td><?php echo $tecnico['Nombre_Tecnico']; ?></td>
                                     <td><?php echo $tecnico['Correo']; ?></td>
-                                    <td><?php echo $tecnico['Edad']; ?></td>
                                     <td><?php echo $tecnico['Nombre_Rol']; ?></td>
                                     <td>
                                         <button type="button" class="btn btn-sm btn-warning" data-bs-toggle="modal"
@@ -258,20 +248,8 @@ $roles = obtenerRoles($conn);
                     <form action="" method="post">
                         <input type="hidden" name="csrf_token" value="<?php echo htmlspecialchars($_SESSION['csrf_token']); ?>">
                         <div class="mb-3">
-                            <label for="primer_nombre" class="form-label">Primer Nombre (*)</label>
-                            <input type="text" class="form-control" id="primer_nombre" name="primer_nombre" required>
-                        </div>
-                        <div class="mb-3">
-                            <label for="segundo_nombre" class="form-label">Segundo Nombre</label>
-                            <input type="text" class="form-control" id="segundo_nombre" name="segundo_nombre">
-                        </div>
-                        <div class="mb-3">
-                            <label for="primer_apellido" class="form-label">Primer Apellido (*)</label>
-                            <input type="text" class="form-control" id="primer_apellido" name="primer_apellido" required>
-                        </div>
-                        <div class="mb-3">
-                            <label for="segundo_apellido" class="form-label">Segundo Apellido</label>
-                            <input type="text" class="form-control" id="segundo_apellido" name="segundo_apellido">
+                            <label for="nombre_tecnico" class="form-label">Nombre Tecnico (*)</label>
+                            <input type="text" class="form-control" id="nombre_tecnico" name="nombre_tecnico" required>
                         </div>
                         <div class="mb-3">
                             <label for="correo" class="form-label">Correo (*)</label>
@@ -281,11 +259,7 @@ $roles = obtenerRoles($conn);
                             <label for="contrasena" class="form-label">Contraseña (*)</label>
                             <input type="password" class="form-control" id="contrasena" name="contrasena" required minlength="<?php echo PASSWORD_MIN_LENGTH; ?>">
                         </div>
-                        <div class="mb-3">
-                            <label for="edad" class="form-label">Edad</label>
-                            <input type="number" class="form-control" id="edad" name="edad" required min="18" max="100">
-                        </div>
-                        <div class="mb-3">
+                    <div class="mb-3">
                             <label for="rol_id" class="form-label">Rol (*)</label>
                             <select class="form-select" id="rol_id" name="rol_id" required>
                                 <?php foreach ($roles as $rol): ?>
@@ -316,42 +290,15 @@ $roles = obtenerRoles($conn);
                             <input type="hidden" name="csrf_token" value="<?php echo htmlspecialchars($_SESSION['csrf_token']); ?>">
                             <input type="hidden" name="id_tecnico" value="<?php echo $tecnico['idTecnico']; ?>">
                             <div class="mb-3">
-                                <label for="primer_nombre<?php echo $tecnico['idTecnico']; ?>" class="form-label">Primer
-                                    Nombre</label>
+                                <label for="nombre<?php echo $tecnico['idTecnico']; ?>" class="form-label">Nombre Tecnico (*)</label>
                                 <input type="text" class="form-control"
-                                    id="primer_nombre<?php echo $tecnico['idTecnico']; ?>" name="primer_nombre"
-                                    value="<?php echo htmlspecialchars($tecnico['Primer_Nombre']); ?>" required>
+                                    id="nombre<?php echo $tecnico['idTecnico']; ?>" name="nombre_tecnico"
+                                    value="<?php echo htmlspecialchars($tecnico['Nombre_Tecnico']); ?>" required>
                             </div>
-                            <div class="mb-3">
-                                <label for="segundo_nombre<?php echo $tecnico['idTecnico']; ?>" class="form-label">Segundo
-                                    Nombre</label>
-                                <input type="text" class="form-control"
-                                    id="segundo_nombre<?php echo $tecnico['idTecnico']; ?>" name="segundo_nombre"
-                                    value="<?php echo htmlspecialchars($tecnico['Segundo_Nombre']); ?>">
-                            </div>
-                            <div class="mb-3">
-                                <label for="primer_apellido<?php echo $tecnico['idTecnico']; ?>" class="form-label">Primer
-                                    Apellido</label>
-                                <input type="text" class="form-control"
-                                    id="primer_apellido<?php echo $tecnico['idTecnico']; ?>" name="primer_apellido"
-                                    value="<?php echo htmlspecialchars($tecnico['Primer_Apellido']); ?>" required>
-                            </div>
-                            <div class="mb-3">
-                                <label for="segundo_apellido<?php echo $tecnico['idTecnico']; ?>" class="form-label">Segundo
-                                    Apellido</label>
-                                <input type="text" class="form-control"
-                                    id="segundo_apellido<?php echo $tecnico['idTecnico']; ?>" name="segundo_apellido"
-                                    value="<?php echo htmlspecialchars($tecnico['Segundo_Apellido']); ?>">
-                            </div>
-                            <div class="mb-3">
+                          <div class="mb-3">
                                 <label for="correo<?php echo $tecnico['idTecnico']; ?>" class="form-label">Correo</label>
                                 <input type="email" class="form-control" id="correo<?php echo $tecnico['idTecnico']; ?>"
                                     name="correo" value="<?php echo htmlspecialchars($tecnico['Correo']); ?>" required>
-                            </div>
-                            <div class="mb-3">
-                                <label for="edad<?php echo $tecnico['idTecnico']; ?>" class="form-label">Edad</label>
-                                <input type="number" class="form-control" id="edad<?php echo $tecnico['idTecnico']; ?>"
-                                    name="edad" value="<?php echo $tecnico['Edad']; ?>" required>
                             </div>
                             <div class="mb-3">
                                 <label for="rol_id<?php echo $tecnico['idTecnico']; ?>" class="form-label">Rol</label>

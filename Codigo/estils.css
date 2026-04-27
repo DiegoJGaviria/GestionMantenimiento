@@ -36,6 +36,15 @@
   --transition: all 0.2s ease;
 }
 
+/* --- Modal z-index fix --- */
+.modal {
+  z-index: 1060 !important;
+}
+
+.modal-backdrop {
+  z-index: 1050 !important;
+}
+
 /* --- Reset y base --- */
 *,
 *::before,

@@ -43,7 +43,7 @@
             <li><a class="dropdown-item" href="tecnicos.php">Administrar tecnicos</a></li>
             <li><a class="dropdown-item" href="tecnicos.php">Gestionar cuentas</a></li>
             <?php endif; ?>
-            <li><a class="dropdown-item" href=" ">Cerrar sesión</a></li>
+            <li><a class="dropdown-item" href="logout.php">Cerrar sesión</a></li>
           </ul>
         </li>
         <?php endif; ?>

@@ -12,7 +12,7 @@ $total_tecnicos = $conn->query("SELECT COUNT(*) as total FROM Tecnico")->fetch_a
 $total_marcas = $conn->query("SELECT COUNT(*) as total FROM Marca")->fetch_assoc()['total'];
 
 // Ultimos 5 arreglos
-$ultimos_arreglos = $conn->query("SELECT a.*, m.Nombre_Marca, u.Primer_Nombre, u.Primer_Apellido 
+$ultimos_arreglos = $conn->query("SELECT a.*, m.Nombre_Marca, u.Nombre_Tecnico 
     FROM Arreglo a 
     JOIN Marca m ON a.Marca_idMarca = m.idMarca 
     JOIN Tecnico u ON a.Tecnico_idTecnico = u.idTecnico 
@@ -125,7 +125,7 @@ $valor_total = $conn->query("SELECT COALESCE(SUM(Valor_Pago), 0) as total FROM A
                                             </td>
                                             <td><?php echo htmlspecialchars($arreglo['Nombre_Marca']); ?></td>
                                             <td><span class="valor-moneda">$<?php echo number_format($arreglo['Valor_Pago'], 0, ',', '.'); ?></span></td>
-                                            <td><?php echo htmlspecialchars($arreglo['Primer_Nombre'] . ' ' . $arreglo['Primer_Apellido']); ?></td>
+                                            <td><?php echo htmlspecialchars($arreglo['Nombre_Tecnico']); ?></td>
                                         </tr>
                                         <?php endwhile; ?>
                                     <?php else: ?>

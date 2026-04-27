@@ -46,7 +46,7 @@ if ($_SERVER["REQUEST_METHOD"] === "POST") {
             $error = ERROR_INVALID_EMAIL;
         } else {
             // Database query with prepared statement
-            $stmt = $conn->prepare("SELECT u.idTecnico, u.Primer_Nombre, u.Primer_Apellido, u.`Contraseña`, u.Rol_idRol, r.Nombre_Rol FROM Tecnico u LEFT JOIN Rol r ON u.Rol_idRol = r.idRol WHERE u.Correo = ? LIMIT 1");
+            $stmt = $conn->prepare("SELECT u.idTecnico, u.Nombre_Tecnico, u.`Contraseña`, u.Rol_idRol, r.Nombre_Rol FROM Tecnico u LEFT JOIN Rol r ON u.Rol_idRol = r.idRol WHERE u.Correo = ? LIMIT 1");
             if ($stmt) {
                 $stmt->bind_param('s', $correo);
                 $stmt->execute();
@@ -58,7 +58,7 @@ if ($_SERVER["REQUEST_METHOD"] === "POST") {
                     // Verify password allowing plain text or previously hashed values
                     if ($storedPassword === $password || password_verify($password, $storedPassword)) {
                         // Set session variables
-                        $_SESSION['tecnico'] = $fila['Primer_Nombre'] . ' ' . $fila['Primer_Apellido'];
+                        $_SESSION['tecnico'] = $fila['Nombre_Tecnico'];
                         $_SESSION['idTecnico'] = $fila['idTecnico'];
                         $_SESSION['idRol'] = $fila['Rol_idRol'];
                         $_SESSION['rol_nombre'] = $fila['Nombre_Rol'] ?: 'Tecnico';

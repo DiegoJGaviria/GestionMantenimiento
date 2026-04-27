@@ -19,14 +19,12 @@ function obtenerClientes($conn) {
 // Crear cliente
 if (isset($_POST['crear_cliente'])) {
     $primer_nombre = $_POST['primer_nombre'];
-    $segundo_nombre = $_POST['segundo_nombre'];
     $primer_apellido = $_POST['primer_apellido'];
-    $segundo_apellido = $_POST['segundo_apellido'];
     $telefono = $_POST['telefono'];
     $direccion = $_POST['direccion'];
 
-    $sql = "INSERT INTO Cliente (Primer_Nombre, Segundo_Nombre, Primer_Apellido, Segundo_Apellido, Telefono, Direccion) 
-            VALUES ('$primer_nombre', '$segundo_nombre', '$primer_apellido', '$segundo_apellido', '$telefono', '$direccion')";
+    $sql = "INSERT INTO Cliente (Primer_Nombre, Primer_Apellido, Telefono, Direccion) 
+            VALUES ('$primer_nombre', '$primer_apellido', '$telefono', '$direccion')";
     
     if ($conn->query($sql) === TRUE) {
         echo "<div class='alert alert-success'>Cliente creado con éxito</div>";
@@ -39,17 +37,13 @@ if (isset($_POST['crear_cliente'])) {
 if (isset($_POST['actualizar_cliente'])) {
     $id = $_POST['id_cliente'];
     $primer_nombre = $_POST['primer_nombre'];
-    $segundo_nombre = $_POST['segundo_nombre'];
     $primer_apellido = $_POST['primer_apellido'];
-    $segundo_apellido = $_POST['segundo_apellido'];
     $telefono = $_POST['telefono'];
     $direccion = $_POST['direccion'];
 
     $sql = "UPDATE Cliente SET 
             Primer_Nombre='$primer_nombre', 
-            Segundo_Nombre='$segundo_nombre', 
             Primer_Apellido='$primer_apellido', 
-            Segundo_Apellido='$segundo_apellido', 
             Telefono='$telefono', 
             Direccion='$direccion' 
             WHERE idCliente=$id";
@@ -113,8 +107,8 @@ $clientes = obtenerClientes($conn);
                             <?php foreach ($clientes as $cliente): ?>
                             <tr>
                                 <td><?php echo $cliente['idCliente']; ?></td>
-                                <td><?php echo $cliente['Primer_Nombre'] . ' ' . $cliente['Segundo_Nombre']; ?></td>
-                                <td><?php echo $cliente['Primer_Apellido'] . ' ' . $cliente['Segundo_Apellido']; ?></td>
+                                <td><?php echo $cliente['Primer_Nombre']; ?></td>
+                                <td><?php echo $cliente['Primer_Apellido'] ; ?></td>
                                 <td><?php echo $cliente['Telefono']; ?></td>
                                 <td><?php echo $cliente['Direccion']; ?></td>
                                 <td>
@@ -143,20 +137,12 @@ $clientes = obtenerClientes($conn);
                 <div class="modal-body">
                     <form action="" method="post">
                         <div class="mb-3">
-                            <label for="primer_nombre" class="form-label">Primer Nombre</label>
+                            <label for="primer_nombre" class="form-label">Nombres</label>
                             <input type="text" class="form-control" id="primer_nombre" name="primer_nombre" required>
                         </div>
                         <div class="mb-3">
-                            <label for="segundo_nombre" class="form-label">Segundo Nombre</label>
-                            <input type="text" class="form-control" id="segundo_nombre" name="segundo_nombre">
-                        </div>
-                        <div class="mb-3">
-                            <label for="primer_apellido" class="form-label">Primer Apellido</label>
+                            <label for="primer_apellido" class="form-label">Apellidos</label>
                             <input type="text" class="form-control" id="primer_apellido" name="primer_apellido" required>
-                        </div>
-                        <div class="mb-3">
-                            <label for="segundo_apellido" class="form-label">Segundo Apellido</label>
-                            <input type="text" class="form-control" id="segundo_apellido" name="segundo_apellido">
                         </div>
                         <div class="mb-3">
                             <label for="telefono" class="form-label">Teléfono</label>
@@ -190,16 +176,8 @@ $clientes = obtenerClientes($conn);
                             <input type="text" class="form-control" id="primer_nombre<?php echo $cliente['idCliente']; ?>" name="primer_nombre" value="<?php echo $cliente['Primer_Nombre']; ?>" required>
                         </div>
                         <div class="mb-3">
-                            <label for="segundo_nombre<?php echo $cliente['idCliente']; ?>" class="form-label">Segundo Nombre</label>
-                            <input type="text" class="form-control" id="segundo_nombre<?php echo $cliente['idCliente']; ?>" name="segundo_nombre" value="<?php echo $cliente['Segundo_Nombre']; ?>">
-                        </div>
-                        <div class="mb-3">
                             <label for="primer_apellido<?php echo $cliente['idCliente']; ?>" class="form-label">Primer Apellido</label>
                             <input type="text" class="form-control" id="primer_apellido<?php echo $cliente['idCliente']; ?>" name="primer_apellido" value="<?php echo $cliente['Primer_Apellido']; ?>" required>
-                        </div>
-                        <div class="mb-3">
-                            <label for="segundo_apellido<?php echo $cliente['idCliente']; ?>" class="form-label">Segundo Apellido</label>
-                            <input type="text" class="form-control" id="segundo_apellido<?php echo $cliente['idCliente']; ?>" name="segundo_apellido" value="<?php echo $cliente['Segundo_Apellido']; ?>">
                         </div>
                         <div class="mb-3">
                             <label for="telefono<?php echo $cliente['idCliente']; ?>" class="form-label">Teléfono</label>
