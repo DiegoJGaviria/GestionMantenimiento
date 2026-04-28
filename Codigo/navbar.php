@@ -1,5 +1,4 @@
 <?php if (session_status() === PHP_SESSION_NONE) session_start(); ?>
-<!-- navbar.php -->
 <nav class="navbar navbar-expand-lg navbar-dark navbar-custom">
   <div class="container-fluid">
     <a class="navbar-brand"><h3>Sistema de Arreglo de Computadores</h3></a>
@@ -39,11 +38,13 @@
           </a>
           <ul class="dropdown-menu dropdown-menu-end" aria-labelledby="profileDropdown">
             <li><span class="dropdown-item-text">Rol: <?php echo htmlspecialchars($_SESSION['rol_nombre'] ?? 'Tecnico'); ?></span></li>
+            <li><hr class="dropdown-divider"></li>
+            <li><a class="dropdown-item" href="mi_cuenta.php"><i class="bi bi-gear me-2"></i>Mi Cuenta</a></li>
             <?php if (isset($_SESSION['rol_nombre']) && $_SESSION['rol_nombre'] === 'Administrador'): ?>
-            <li><a class="dropdown-item" href="tecnicos.php">Administrar tecnicos</a></li>
-            <li><a class="dropdown-item" href="tecnicos.php">Gestionar cuentas</a></li>
+            <li><a class="dropdown-item" href="tecnicos.php"><i class="bi bi-people me-2"></i>Gestionar Tecnicos</a></li>
             <?php endif; ?>
-            <li><a class="dropdown-item" href="logout.php">Cerrar sesión</a></li>
+            <li><hr class="dropdown-divider"></li>
+            <li><a class="dropdown-item" href="logout.php"><i class="bi bi-box-arrow-right me-2"></i>Cerrar sesion</a></li>
           </ul>
         </li>
         <?php endif; ?>

@@ -1,145 +1,122 @@
 <?php
 /**
- * User management page - Admin only
- * Implements secure CRUD operations with prepared statements and CSRF protection
+ *Gestionar Tecnicos
  */
 
 include('auth.php');
 include("conexion.php");
 
+// Solo administradores pueden acceder
 if (!isset($_SESSION['rol_nombre']) || $_SESSION['rol_nombre'] !== 'Administrador') {
     header('Location: index.php');
     exit();
 }
 
-// CSRF token generation
+// CSRF token
 if (empty($_SESSION['csrf_token'])) {
     $_SESSION['csrf_token'] = bin2hex(random_bytes(32));
 }
 
-// Función para obtener todos los tecnicos
-function obtenerTecnicos($conn)
-{
+// Funcion para obtener todos los tecnicos
+function obtenerTecnicos($conn) {
     $sql = "SELECT u.*, r.Nombre_Rol FROM Tecnico u LEFT JOIN Rol r ON u.Rol_idRol = r.idRol";
     $result = $conn->query($sql);
-    if (!$result) {
-        die("Error en la consulta Tecnicos: " . $conn->error);
-    }
     return $result->fetch_all(MYSQLI_ASSOC);
 }
 
-// Función para obtener todos los roles
-function obtenerRoles($conn)
-{
+// Funcion para obtener todos los roles
+function obtenerRoles($conn) {
     $sql = "SELECT * FROM Rol";
     $result = $conn->query($sql);
     return $result->fetch_all(MYSQLI_ASSOC);
 }
 
-// Crear tecnico
+// Creacion Exitosa de Tecnico
 if (isset($_POST['crear_tecnico'])) {
-    // CSRF protection
     if (!isset($_POST['csrf_token']) || !hash_equals($_SESSION['csrf_token'], $_POST['csrf_token'])) {
-        echo "<div class='alert alert-danger'>Error de seguridad. Intente nuevamente.</div>";
+        $_SESSION['mensaje'] = "<div class='alert alert-danger'>Error de seguridad. Intente nuevamente.</div>";
     } else {
         $nombre_tecnico = trim($_POST['nombre_tecnico'] ?? '');
         $correo = trim($_POST['correo'] ?? '');
         $contrasena = $_POST['contrasena'] ?? '';
         $rol_id = (int)($_POST['rol_id'] ?? 0);
 
-        // Validation
         $errors = [];
-        if (empty($nombre_tecnico)) $errors[] = "Nombre del técnico es obligatorio.";
-        if (!filter_var($correo, FILTER_VALIDATE_EMAIL)) $errors[] = "Correo electrónico inválido.";
-        if (strlen($contrasena) < PASSWORD_MIN_LENGTH) $errors[] = "La contraseña debe tener al menos " . PASSWORD_MIN_LENGTH . " caracteres.";
-        if ($rol_id < 1) $errors[] = "Rol inválido.";
+        if (empty($nombre_tecnico)) $errors[] = "Nombre del tecnico es obligatorio.";
+        if (empty($correo)) $errors[] = "Correo electronico es obligatorio.";
+        if (!filter_var($correo, FILTER_VALIDATE_EMAIL)) $errors[] = "Correo electronico invalido.";
+        if (empty($contrasena)) $errors[] = "Contrasena es obligatoria.";
+        if ($rol_id < 1) $errors[] = "Rol es obligatorio.";
 
-        // Check if email already exists
         if (empty($errors)) {
             $stmt_check = $conn->prepare("SELECT idTecnico FROM Tecnico WHERE Correo = ?");
             $stmt_check->bind_param("s", $correo);
             $stmt_check->execute();
             if ($stmt_check->get_result()->num_rows > 0) {
-                $errors[] = "El correo electrónico ya está registrado.";
+                $errors[] = "El correo electronico ya esta registrado.";
             }
             $stmt_check->close();
         }
 
         if (empty($errors)) {
             $stmt = $conn->prepare("INSERT INTO Tecnico (Nombre_Tecnico, Correo, `Contraseña`, Rol_idRol) VALUES (?, ?, ?, ?)");
-            if ($stmt) {
-                $stmt->bind_param('sssi', $nombre_tecnico, $correo, $contrasena, $rol_id);
-                if ($stmt->execute()) {
-                    echo "<div class='alert alert-success'>Tecnico creado con éxito</div>";
-                } else {
-                    error_log("Error creating user: " . $stmt->error);
-                    echo "<div class='alert alert-danger'>Error al crear tecnico.</div>";
-                }
-                $stmt->close();
+            $stmt->bind_param('sssi', $nombre_tecnico, $correo, $contrasena, $rol_id);
+            if ($stmt->execute()) {
+                $_SESSION['mensaje'] = "<div class='alert alert-success'>Tecnico creado con exito</div>";
             } else {
-                error_log("Error preparing create statement: " . $conn->error);
-                echo "<div class='alert alert-danger'>Error interno del servidor.</div>";
+                $_SESSION['mensaje'] = "<div class='alert alert-danger'>Error al crear tecnico.</div>";
             }
+            $stmt->close();
         } else {
-            echo "<div class='alert alert-danger'>" . implode("<br>", array_map('htmlspecialchars', $errors)) . "</div>";
+            $_SESSION['mensaje'] = "<div class='alert alert-danger'>" . implode("<br>", array_map('htmlspecialchars', $errors)) . "</div>";
         }
     }
+    header("Location: tecnicos.php");
+    exit();
 }
 
 // Actualizar tecnico
 if (isset($_POST['actualizar_tecnico'])) {
-    // CSRF protection
     if (!isset($_POST['csrf_token']) || !hash_equals($_SESSION['csrf_token'], $_POST['csrf_token'])) {
-        echo "<div class='alert alert-danger'>Error de seguridad. Intente nuevamente.</div>";
+        $_SESSION['mensaje'] = "<div class='alert alert-danger'>Error de seguridad. Intente nuevamente.</div>";
     } else {
         $id = (int)($_POST['id_tecnico'] ?? 0);
         $nombre_tecnico = trim($_POST['nombre_tecnico'] ?? '');
         $correo = trim($_POST['correo'] ?? '');
         $rol_id = (int)($_POST['rol_id'] ?? 0);
 
-        // Validation
         $errors = [];
-        if (empty($nombre_tecnico)) $errors[] = "nombre del tecnico es obligatorio.";
-        if (!filter_var($correo, FILTER_VALIDATE_EMAIL)) $errors[] = "Correo electrónico inválido.";
-        if ($rol_id < 1) $errors[] = "Rol inválido.";
+        if (empty($nombre_tecnico)) $errors[] = "Nombre del tecnico es obligatorio.";
+        if (!filter_var($correo, FILTER_VALIDATE_EMAIL)) $errors[] = "Correo electronico invalido.";
+        if ($rol_id < 1) $errors[] = "Rol invalido.";
 
         if (empty($errors)) {
-            $stmt = $conn->prepare("UPDATE Tecnico SET
-                    Nombre_Tecnico=?,Correo=?, Rol_idRol=? WHERE idTecnico=?");
-            if ($stmt) {
-                $stmt->bind_param("ssii", $nombre_tecnico, $correo, $rol_id, $id);
-                if ($stmt->execute()) {
-                    echo "<div class='alert alert-success'>Tecnico actualizado con éxito</div>";
-                } else {
-                    error_log("Error updating user: " . $stmt->error);
-                    echo "<div class='alert alert-danger'>Error al actualizar tecnico.</div>";
-                }
-                $stmt->close();
+            $stmt = $conn->prepare("UPDATE Tecnico SET Nombre_Tecnico=?, Correo=?, Rol_idRol=? WHERE idTecnico=?");
+            $stmt->bind_param("ssii", $nombre_tecnico, $correo, $rol_id, $id);
+            if ($stmt->execute()) {
+                $_SESSION['mensaje'] = "<div class='alert alert-success'>Tecnico actualizado con exito</div>";
             } else {
-                error_log("Error preparing update statement: " . $conn->error);
-                echo "<div class='alert alert-danger'>Error interno del servidor.</div>";
+                $_SESSION['mensaje'] = "<div class='alert alert-danger'>Error al actualizar tecnico.</div>";
             }
+            $stmt->close();
         } else {
-            echo "<div class='alert alert-danger'>" . implode("<br>", array_map('htmlspecialchars', $errors)) . "</div>";
+            $_SESSION['mensaje'] = "<div class='alert alert-danger'>" . implode("<br>", array_map('htmlspecialchars', $errors)) . "</div>";
         }
     }
+    header("Location: tecnicos.php");
+    exit();
 }
 
-// Eliminar tecnico
+// Eliminacion de Tecnico
 if (isset($_GET['eliminar'])) {
     $id = (int) $_GET['eliminar'];
     $conn->begin_transaction();
     $error = false;
 
     $stmts = [
-        // Primero eliminar los detalles asociados a los arreglos del técnico
         "DELETE FROM Detalle_Arreglo WHERE Arreglo_idArreglo IN (SELECT idArreglo FROM Arreglo WHERE Tecnico_idTecnico = ?)",
         "DELETE FROM Detalle_Diagnostico WHERE Arreglo_idArreglo IN (SELECT idArreglo FROM Arreglo WHERE Tecnico_idTecnico = ?)",
-
-        // Luego eliminar los arreglos del técnico
         "DELETE FROM Arreglo WHERE Tecnico_idTecnico = ?",
-
-        // Finalmente eliminar el técnico
         "DELETE FROM Tecnico WHERE idTecnico = ?"
     ];
 
@@ -160,13 +137,21 @@ if (isset($_GET['eliminar'])) {
 
     if ($error) {
         $conn->rollback();
-        echo "<div class='alert alert-danger'>No se pudo eliminar el técnico: " . $conn->error . "</div>";
+        $_SESSION['mensaje'] = "<div class='alert alert-danger'>No se pudo eliminar el tecnico.</div>";
     } else {
         $conn->commit();
-        echo "<div class='alert alert-success'>Técnico eliminado con éxito</div>";
+        $_SESSION['mensaje'] = "<div class='alert alert-success'>Tecnico eliminado correctamente</div>";
     }
+    header("Location: tecnicos.php");
+    exit();
 }
 
+// Mostrar mensaje de sesion y limpiar
+$mensaje = '';
+if (isset($_SESSION['mensaje'])) {
+    $mensaje = $_SESSION['mensaje'];
+    unset($_SESSION['mensaje']);
+}
 
 $tecnicos = obtenerTecnicos($conn);
 $roles = obtenerRoles($conn);
@@ -174,25 +159,23 @@ $roles = obtenerRoles($conn);
 
 <!DOCTYPE html>
 <html lang="es">
-
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Tecnicos</title>
+    <title>Tecnicos - Sistema de Arreglo de Computadores</title>
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.1.3/dist/css/bootstrap.min.css" rel="stylesheet">
     <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css" rel="stylesheet">
     <link href="estils.css" rel="stylesheet">
 </head>
-
 <body>
     <?php include 'navbar.php'; ?>
+    <?php echo $mensaje; ?>
 
     <div class="container mt-4">
         <div class="card">
             <div class="card-header d-flex justify-content-between align-items-center">
                 <h2>Listar Tecnicos</h2>
-                <button type="button" class="btn btn-primary" data-bs-toggle="modal"
-                    data-bs-target="#crearTecnicoModal">
+                <button type="button" class="btn btn-primary" data-bs-toggle="modal" data-bs-target="#crearTecnicoModal">
                     Crear Tecnico
                 </button>
             </div>
@@ -203,30 +186,25 @@ $roles = obtenerRoles($conn);
                             <tr>
                                 <th>ID</th>
                                 <th>Nombre</th>
-                                <th>Apellido</th>
                                 <th>Correo</th>
-                                <th>Edad</th>
                                 <th>Rol</th>
                                 <th>Acciones</th>
                             </tr>
                         </thead>
                         <tbody>
                             <?php foreach ($tecnicos as $tecnico): ?>
-                                <tr>
-                                    <td><?php echo $tecnico['idTecnico']; ?></td>
-                                    <td><?php echo $tecnico['Nombre_Tecnico']; ?></td>
-                                    <td><?php echo $tecnico['Correo']; ?></td>
-                                    <td><?php echo $tecnico['Nombre_Rol']; ?></td>
-                                    <td>
-                                        <button type="button" class="btn btn-sm btn-warning" data-bs-toggle="modal"
-                                            data-bs-target="#editarTecnicoModal<?php echo $tecnico['idTecnico']; ?>">
-                                            Editar
-                                        </button>
-                                        <a href="?eliminar=<?php echo $tecnico['idTecnico']; ?>"
-                                            class="btn btn-sm btn-danger"
-                                            onclick="return confirm('¿Estás seguro de que quieres eliminar este tecnico?')">Eliminar</a>
-                                    </td>
-                                </tr>
+                            <tr>
+                                <td><?php echo $tecnico['idTecnico']; ?></td>
+                                <td><?php echo htmlspecialchars($tecnico['Nombre_Tecnico']); ?></td>
+                                <td><?php echo htmlspecialchars($tecnico['Correo']); ?></td>
+                                <td><?php echo htmlspecialchars($tecnico['Nombre_Rol']); ?></td>
+                                <td>
+                                    <button type="button" class="btn btn-sm btn-warning" data-bs-toggle="modal" data-bs-target="#editarTecnicoModal<?php echo $tecnico['idTecnico']; ?>">
+                                        Editar
+                                    </button>
+                                    <a href="?eliminar=<?php echo $tecnico['idTecnico']; ?>" class="btn btn-sm btn-danger" onclick="return confirm('¿Estas seguro de que quieres eliminar este tecnico?')">Eliminar</a>
+                                </td>
+                            </tr>
                             <?php endforeach; ?>
                         </tbody>
                     </table>
@@ -236,8 +214,7 @@ $roles = obtenerRoles($conn);
     </div>
 
     <!-- Modal para crear tecnico -->
-    <div class="modal fade" id="crearTecnicoModal" tabindex="-1" aria-labelledby="crearTecnicoModalLabel"
-        aria-hidden="true">
+    <div class="modal fade" id="crearTecnicoModal" tabindex="-1" aria-labelledby="crearTecnicoModalLabel" aria-hidden="true">
         <div class="modal-dialog">
             <div class="modal-content">
                 <div class="modal-header">
@@ -252,18 +229,18 @@ $roles = obtenerRoles($conn);
                             <input type="text" class="form-control" id="nombre_tecnico" name="nombre_tecnico" required>
                         </div>
                         <div class="mb-3">
-                            <label for="correo" class="form-label">Correo (*)</label>
+                            <label for="correo" class="form-label">Correo Electronico (*)</label>
                             <input type="email" class="form-control" id="correo" name="correo" required>
                         </div>
                         <div class="mb-3">
-                            <label for="contrasena" class="form-label">Contraseña (*)</label>
-                            <input type="password" class="form-control" id="contrasena" name="contrasena" required minlength="<?php echo PASSWORD_MIN_LENGTH; ?>">
+                            <label for="contrasena" class="form-label">Contrasena (*)</label>
+                            <input type="password" class="form-control" id="contrasena" name="contrasena" required>
                         </div>
-                    <div class="mb-3">
+                        <div class="mb-3">
                             <label for="rol_id" class="form-label">Rol (*)</label>
                             <select class="form-select" id="rol_id" name="rol_id" required>
                                 <?php foreach ($roles as $rol): ?>
-                                    <option value="<?php echo htmlspecialchars($rol['idRol']); ?>"><?php echo htmlspecialchars($rol['Nombre_Rol']); ?></option>
+                                <option value="<?php echo htmlspecialchars($rol['idRol']); ?>"><?php echo htmlspecialchars($rol['Nombre_Rol']); ?></option>
                                 <?php endforeach; ?>
                             </select>
                         </div>
@@ -276,50 +253,43 @@ $roles = obtenerRoles($conn);
 
     <!-- Modales para editar tecnico -->
     <?php foreach ($tecnicos as $tecnico): ?>
-        <div class="modal fade" id="editarTecnicoModal<?php echo $tecnico['idTecnico']; ?>" tabindex="-1"
-            aria-labelledby="editarTecnicoModalLabel<?php echo $tecnico['idTecnico']; ?>" aria-hidden="true">
-            <div class="modal-dialog">
-                <div class="modal-content">
-                    <div class="modal-header">
-                        <h5 class="modal-title" id="editarTecnicoModalLabel<?php echo $tecnico['idTecnico']; ?>">Editar
-                            Tecnico</h5>
-                        <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
-                    </div>
-                    <div class="modal-body">
-                        <form action="" method="post">
-                            <input type="hidden" name="csrf_token" value="<?php echo htmlspecialchars($_SESSION['csrf_token']); ?>">
-                            <input type="hidden" name="id_tecnico" value="<?php echo $tecnico['idTecnico']; ?>">
-                            <div class="mb-3">
-                                <label for="nombre<?php echo $tecnico['idTecnico']; ?>" class="form-label">Nombre Tecnico (*)</label>
-                                <input type="text" class="form-control"
-                                    id="nombre<?php echo $tecnico['idTecnico']; ?>" name="nombre_tecnico"
-                                    value="<?php echo htmlspecialchars($tecnico['Nombre_Tecnico']); ?>" required>
-                            </div>
-                          <div class="mb-3">
-                                <label for="correo<?php echo $tecnico['idTecnico']; ?>" class="form-label">Correo</label>
-                                <input type="email" class="form-control" id="correo<?php echo $tecnico['idTecnico']; ?>"
-                                    name="correo" value="<?php echo htmlspecialchars($tecnico['Correo']); ?>" required>
-                            </div>
-                            <div class="mb-3">
-                                <label for="rol_id<?php echo $tecnico['idTecnico']; ?>" class="form-label">Rol</label>
-                                <select class="form-select" id="rol_id<?php echo $tecnico['idTecnico']; ?>" name="rol_id"
-                                    required>
-                                    <?php foreach ($roles as $rol): ?>
-                                        <option value="<?php echo $rol['idRol']; ?>" <?php echo ($rol['idRol'] == $tecnico['Rol_idRol']) ? 'selected' : ''; ?>>
-                                            <?php echo $rol['Nombre_Rol']; ?>
-                                        </option>
-                                    <?php endforeach; ?>
-                                </select>
-                            </div>
-                            <button type="submit" name="actualizar_tecnico" class="btn btn-primary">Actualizar</button>
-                        </form>
-                    </div>
+    <div class="modal fade" id="editarTecnicoModal<?php echo $tecnico['idTecnico']; ?>" tabindex="-1" aria-hidden="true">
+        <div class="modal-dialog">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title">Editar Tecnico</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                </div>
+                <div class="modal-body">
+                    <form action="" method="post">
+                        <input type="hidden" name="csrf_token" value="<?php echo htmlspecialchars($_SESSION['csrf_token']); ?>">
+                        <input type="hidden" name="id_tecnico" value="<?php echo $tecnico['idTecnico']; ?>">
+                        <div class="mb-3">
+                            <label class="form-label">Nombre Tecnico (*)</label>
+                            <input type="text" class="form-control" name="nombre_tecnico" value="<?php echo htmlspecialchars($tecnico['Nombre_Tecnico']); ?>" required>
+                        </div>
+                        <div class="mb-3">
+                            <label class="form-label">Correo (*)</label>
+                            <input type="email" class="form-control" name="correo" value="<?php echo htmlspecialchars($tecnico['Correo']); ?>" required>
+                        </div>
+                        <div class="mb-3">
+                            <label class="form-label">Rol (*)</label>
+                            <select class="form-select" name="rol_id" required>
+                                <?php foreach ($roles as $rol): ?>
+                                <option value="<?php echo $rol['idRol']; ?>" <?php echo ($rol['idRol'] == $tecnico['Rol_idRol']) ? 'selected' : ''; ?>>
+                                    <?php echo htmlspecialchars($rol['Nombre_Rol']); ?>
+                                </option>
+                                <?php endforeach; ?>
+                            </select>
+                        </div>
+                        <button type="submit" name="actualizar_tecnico" class="btn btn-primary">Actualizar</button>
+                    </form>
                 </div>
             </div>
         </div>
+    </div>
     <?php endforeach; ?>
 
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.1.3/dist/js/bootstrap.bundle.min.js"></script>
 </body>
-
 </html>

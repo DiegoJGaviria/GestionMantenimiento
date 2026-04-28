@@ -75,7 +75,7 @@ if ($_SERVER["REQUEST_METHOD"] === "POST") {
                     } else {
                         // Log failed login attempt
                         include_once 'logger.php';
-                        logAuthEvent('LOGIN_FAILED', 'Intento de login fallido - contraseña incorrecta', $correo);
+                        logAuthEvent('LOGIN_FAILED', 'Credenciales de acceso incorrectas, intente de nuevo', $correo);
 
                         $error = ERROR_INVALID_CREDENTIALS;
                     }
