@@ -20,16 +20,16 @@ INSERT INTO `Estado` (`idEstado`, `Nombre_Estado`) VALUES
 
 -- Insertar datos en Tabla Técnico
 INSERT INTO `Tecnico` (`idTecnico`, `Nombre_Tecnico`, `Correo`, `Contraseña`, `Rol_idRol`) VALUES
-(1, 'Juan Carlos Pérez López', 'juan.perez@mail.com', '123456', 1),
-(2, 'Ana María Gómez Hernández', 'ana.gomez@mail.com', 'abcdef', 2),
-(3, 'Luis Andrés Morales Rojas', 'luis.morales@mail.com', 'pass123', 2),
-(4, 'Carla Lucía Ramírez Torres', 'carla.ramirez@mail.com', 'password', 1),
-(5, 'Pedro Enrique Sánchez Flores', 'pedro.sanchez@mail.com', 'qwerty', 2),
-(6, 'Sofía Isabel López Guzmán', 'sofia.lopez@mail.com', 'asdfgh', 1),
-(7, 'María Fernanda Vargas Cruz', 'maria.vargas@mail.com', 'zxcvbn', 2),
-(8, 'José Luis Hernández Martínez', 'jose.hernandez@mail.com', 'hunter2', 2),
-(9, 'Laura Andrea Mendoza Salinas', 'laura.mendoza@mail.com', 'opensesame', 1),
-(10, 'Daniel Francisco Reyes Ortiz', 'daniel.reyes@mail.com', '123abc', 2);
+(1, 'Juan Carlos Pérez López', 'juan.perez@gmail.com', '12345678', 1),
+(2, 'Ana María Gómez Hernández', 'ana.gomez@gmail.com', 'abcdef', 2),
+(3, 'Luis Andrés Morales Rojas', 'luis.morales@gmail.com', 'pass123', 2),
+(4, 'Jesus Yeison Pencue Talaga', 'Yeison@gmail.com', '12345678', 1),
+(5, 'Diego Jose Gaviria Ramirez', 'Diego@gmail.com', '12345678', 1),
+(6, 'Sofía Isabel López Guzmán', 'sofia.lopez@gmail.com', 'asdfgh', 1),
+(7, 'María Fernanda Vargas Cruz', 'maria.vargas@gmail.com', 'zxcvbn', 2),
+(8, 'José Luis Hernández Martínez', 'jose.hernandez@gmail.com', 'hunter2', 2),
+(9, 'Laura Andrea Mendoza Salinas', 'laura.mendoza@gmail.com', 'opensesame', 1),
+(10, 'Daniel Francisco Reyes Ortiz', 'daniel.reyes@gmail.com', '123abc', 2);
 
 -- Insertar datos en Tabla Cliente
 INSERT INTO `Cliente` (`idCliente`, `Primer_Nombre`, `Primer_Apellido`, `Telefono`, `Direccion`) VALUES
