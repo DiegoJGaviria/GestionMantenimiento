@@ -22,10 +22,10 @@
           <a class="nav-link" href="marca.php">Marcas</a>
         </li>
         <li class="nav-item">
-          <a class="nav-link" href="inventario.php">Inventario</a>
+          <a class="nav-link" href="cliente.php">Clientes</a>
         </li>
         <li class="nav-item">
-          <a class="nav-link" href="cliente.php">Clientes</a>
+          <a class="nav-link" href="componentes.php">Componentes</a>
         </li>
         <?php endif; ?>
         <li class="nav-item">
@@ -34,11 +34,6 @@
         <li class="nav-item">
           <a class="nav-link" href="diagnostico.php">Diagnostico</a>
         </li>
-        <?php if (isset($_SESSION['rol_nombre']) && $_SESSION['rol_nombre'] === 'Administrador'): ?>
-        <li class="nav-item">
-          <a class="nav-link" href="facturacion.php">Facturacion</a>
-        </li>
-        <?php endif; ?>
       </ul>
       <ul class="navbar-nav ms-auto">
         <?php if (isset($_SESSION['tecnico'])): ?>

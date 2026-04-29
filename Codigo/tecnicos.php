@@ -259,11 +259,11 @@ $roles = obtenerRoles($conn);
                     <form action="" method="post">
                         <input type="hidden" name="csrf_token" value="<?php echo htmlspecialchars($_SESSION['csrf_token']); ?>">
                         <div class="mb-3">
-                            <label class="form-label">Nombre Tecnico (*)</label>
+                            <label class="form-label">Nombre (*)</label>
                             <input type="text" class="form-control" name="nombre_tecnico" required>
                         </div>
                         <div class="mb-3">
-                            <label class="form-label">Correo Electronico (*)</label>
+                            <label class="form-label">Correo (*)</label>
                             <input type="email" class="form-control" name="correo" required>
                         </div>
                         <div class="mb-3">
@@ -300,7 +300,7 @@ $roles = obtenerRoles($conn);
                         <input type="hidden" name="csrf_token" value="<?php echo htmlspecialchars($_SESSION['csrf_token']); ?>">
                         <input type="hidden" name="id_tecnico" value="<?php echo $tecnico['idTecnico']; ?>">
                         <div class="mb-3">
-                            <label class="form-label">Nombre Tecnico (*)</label>
+                            <label class="form-label">Nombre (*)</label>
                             <input type="text" class="form-control" name="nombre_tecnico" value="<?php echo htmlspecialchars($tecnico['Nombre_Tecnico']); ?>" required>
                         </div>
                         <div class="mb-3">

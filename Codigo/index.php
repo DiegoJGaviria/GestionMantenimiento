@@ -190,6 +190,12 @@ $valor_total = $conn->query("SELECT COALESCE(SUM(Valor_Pago), 0) as total FROM A
                                     <span>Nueva Marca</span>
                                 </a>
                             </div>
+                            <div class="col-12 col-sm-6">
+                                <a href="componentes.php" class="quick-access-card">
+                                    <i class="bi bi-cpu-fill"></i>
+                                    <span>Componentes</span>
+                                </a>
+                            </div>
                             <?php endif; ?>
                             <div class="col-12 col-sm-6">
                                 <a href="diagnostico.php" class="quick-access-card">

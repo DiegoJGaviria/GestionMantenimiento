@@ -43,6 +43,8 @@ function obtenerClientes($conn) {
     return $result->fetch_all(MYSQLI_ASSOC);
 }
 
+
+
 // Arreglos segun rol: Admin ve todos, Tecnico solo los suyos
 function obtenerArreglos($conn, $isAdmin, $idTecnico) {
     $sql = "SELECT a.*, e.Nombre_Estado, m.Nombre_Marca, u.Nombre_Tecnico, td.Nombre_Tipo,
@@ -76,7 +78,7 @@ function obtenerArreglos($conn, $isAdmin, $idTecnico) {
     return $result ? $result->fetch_all(MYSQLI_ASSOC) : [];
 }
 
-// Crear arreglo (Solo Admin)
+// Crear arreglo (Solo Admin) - AHORA CON PRODUCTOS DEL INVENTARIO
 if (isset($_POST['crear_arreglo'])) {
     if (!$isAdmin) {
         $_SESSION['mensaje'] = "<div class='alert alert-danger'>Solo el administrador puede crear arreglos.</div>";
@@ -93,22 +95,26 @@ if (isset($_POST['crear_arreglo'])) {
         $tecnico_id = (int)$_POST['tecnico_id'];
         $estado_id = 1; // Siempre inicia en "En diagnostico"
         $cliente_id = (int)$_POST['cliente_id'];
+        
+        // Productos seleccionados del inventario eliminados - módulo de inventario no disponible
 
         $conn->begin_transaction();
         try {
+            // Crear el arreglo
             $stmt = $conn->prepare("INSERT INTO Arreglo (Tipo_Dispositivo_idTipo, Nombre_Arreglo, Descripcion_Cliente, Valor_Pago, Fecha_Recibido, Fecha_Entrega, Marca_idMarca, Tecnico_idTecnico, Estado_idEstado, Fecha_Cambio_Estado) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, NOW())");
             $stmt->bind_param("issdssiii", $tipo_dispositivo_id, $nombre_arreglo, $descripcion_cliente, $valor_pago, $fecha_recibido, $fecha_entrega, $marca_id, $tecnico_id, $estado_id);
             $stmt->execute();
             $arreglo_id = $conn->insert_id;
             $stmt->close();
 
+            // Crear detalle arreglo (cliente)
             $stmt_detalle = $conn->prepare("INSERT INTO Detalle_Arreglo (Cliente_idCliente, Arreglo_idArreglo) VALUES (?, ?)");
             $stmt_detalle->bind_param("ii", $cliente_id, $arreglo_id);
             $stmt_detalle->execute();
             $stmt_detalle->close();
 
             $conn->commit();
-            $_SESSION['mensaje'] = "<div class='alert alert-success'>Arreglo creado con exito</div>";
+            $_SESSION['mensaje'] = "<div class='alert alert-success'>Arreglo creado con exito.</div>";
         } catch (Exception $e) {
             $conn->rollback();
             $_SESSION['mensaje'] = "<div class='alert alert-danger'>Error: " . $e->getMessage() . "</div>";
@@ -163,6 +169,7 @@ if (isset($_POST['actualizar_arreglo'])) {
     header("Location: arreglo.php");
     exit();
 }
+
 
 // Actualizar estado (Solo Tecnico)
 if (isset($_POST['actualizar_estado_arreglo'])) {
@@ -233,7 +240,12 @@ $clientes = obtenerClientes($conn);
     <title>Arreglos - Sistema de Arreglo de Computadores</title>
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.1.3/dist/css/bootstrap.min.css" rel="stylesheet">
     <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css" rel="stylesheet">
+    <link href="https://cdn.jsdelivr.net/npm/select2@4.1.0-rc.0/dist/css/select2.min.css" rel="stylesheet">
+    <link href="https://cdn.jsdelivr.net/npm/select2-bootstrap-5-theme@1.3.0/dist/select2-bootstrap-5-theme.min.css" rel="stylesheet">
     <link href="estils.css" rel="stylesheet">
+    <style>
+        .select2-container--open { z-index: 9999 !important; }
+    </style>
 </head>
 <body class="bg-light">
     <?php include 'navbar.php'; ?>
@@ -242,10 +254,10 @@ $clientes = obtenerClientes($conn);
     <div class="container mt-4">
         <div class="card">
             <div class="card-header d-flex justify-content-between align-items-center">
-                <h2>Listar Arreglos <?php if (!$isAdmin): ?><small class="text-muted">(Mis arreglos asignados)</small><?php endif; ?></h2>
+                <h2><i class="bi bi-tools"></i> Listar Arreglos <?php if (!$isAdmin): ?><small class="text-muted"></small><?php endif; ?></h2>
                 <?php if ($isAdmin): ?>
                 <button type="button" class="btn btn-primary" data-bs-toggle="modal" data-bs-target="#crearArregloModal">
-                    Crear Arreglo
+                    <i class="bi bi-plus-lg"></i> Crear Arreglo
                 </button>
                 <?php endif; ?>
             </div>
@@ -296,10 +308,12 @@ $clientes = obtenerClientes($conn);
                                 <td><?php echo htmlspecialchars($arreglo['Telefono_Cliente'] ?? '-'); ?></td>
                                 <td>
                                     <?php if ($isAdmin): ?>
-                                    <button type="button" class="btn btn-sm btn-warning" data-bs-toggle="modal" data-bs-target="#editarArregloModal<?php echo $arreglo['idArreglo']; ?>">
-                                        Editar
+                                    <button type="button" class="btn btn-sm btn-warning" data-bs-toggle="modal" data-bs-target="#editarArregloModal<?php echo $arreglo['idArreglo']; ?>" title="Editar">
+                                        <i class="bi bi-pencil"></i>
                                     </button>
-                                    <a href="?eliminar=<?php echo $arreglo['idArreglo']; ?>" class="btn btn-sm btn-danger" onclick="return confirm('¿Estas seguro?')">Eliminar</a>
+                                    <a href="?eliminar=<?php echo $arreglo['idArreglo']; ?>" class="btn btn-sm btn-danger" onclick="return confirm('¿Estas seguro de eliminar este arreglo?')" title="Eliminar">
+                                        <i class="bi bi-trash"></i>
+                                    </a>
                                     <?php else: ?>
                                     <button type="button" class="btn btn-sm btn-info" data-bs-toggle="modal" data-bs-target="#estadoArregloModal<?php echo $arreglo['idArreglo']; ?>">
                                         Actualizar Estado
@@ -317,18 +331,19 @@ $clientes = obtenerClientes($conn);
 
     <!-- Modal para crear arreglo (Admin) -->
     <div class="modal fade" id="crearArregloModal" tabindex="-1" aria-hidden="true">
-        <div class="modal-dialog modal-lg">
+        <div class="modal-dialog modal-xl">
             <div class="modal-content">
-                <div class="modal-header">
-                    <h5 class="modal-title">Crear Nuevo Arreglo</h5>
-                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                <div class="modal-header bg-primary text-white">
+                    <h5 class="modal-title"><i class="bi bi-plus-lg"></i> Crear Nuevo Arreglo</h5>
+                    <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close"></button>
                 </div>
                 <div class="modal-body">
-                    <form action="" method="post">
+                    <form action="" method="post" id="formCrearArreglo">
                         <input type="hidden" name="csrf_token" value="<?php echo htmlspecialchars($_SESSION['csrf_token']); ?>">
                         <div class="alert alert-info">
-                            El arreglo se creara con estado <strong>"En diagnostico"</strong>. Solo el tecnico asignado puede cambiar el estado.
+                            <i class="bi bi-info-circle"></i> El arreglo se creara con estado <strong>"En diagnostico"</strong>. Solo el tecnico asignado puede cambiar el estado.
                         </div>
+                        
                         <div class="row mb-3">
                             <div class="col-md-6">
                                 <label class="form-label">Tipo de Dispositivo (*)</label>
@@ -400,20 +415,32 @@ $clientes = obtenerClientes($conn);
                                 <input type="date" class="form-control" name="fecha_entrega">
                             </div>
                         </div>
-                        <button type="submit" name="crear_arreglo" class="btn btn-primary">Crear Arreglo</button>
+
+                        <!-- Seccion de Productos del Inventario -->
+                        <button type="submit" name="crear_arreglo" class="btn btn-primary">
+                            <i class="bi bi-check-lg"></i> Crear Arreglo
+                        </button>
                     </form>
                 </div>
             </div>
         </div>
     </div>
 
-    <!-- Modales para editar arreglo (Admin) -->
+    <!-- Modales para cada arreglo -->
     <?php foreach ($arreglos as $arreglo): ?>
+    
+    <!-- Modal para editar arreglo (Admin) -->
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Modal para editar arreglo (Admin) -->
     <div class="modal fade" id="editarArregloModal<?php echo $arreglo['idArreglo']; ?>" tabindex="-1" aria-hidden="true">
         <div class="modal-dialog modal-lg">
             <div class="modal-content">
-                <div class="modal-header">
-                    <h5 class="modal-title">Editar Arreglo</h5>
+                <div class="modal-header bg-warning">
+                    <h5 class="modal-title"><i class="bi bi-pencil"></i> Editar Arreglo #<?php echo $arreglo['idArreglo']; ?></h5>
                     <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
                 </div>
                 <div class="modal-body">
@@ -489,6 +516,7 @@ $clientes = obtenerClientes($conn);
                                 <input type="date" class="form-control" name="fecha_entrega" value="<?php echo $arreglo['Fecha_Entrega']; ?>">
                             </div>
                         </div>
+                        
                         <button type="submit" name="actualizar_arreglo" class="btn btn-primary">Actualizar Arreglo</button>
                     </form>
                 </div>
@@ -500,9 +528,9 @@ $clientes = obtenerClientes($conn);
     <div class="modal fade" id="estadoArregloModal<?php echo $arreglo['idArreglo']; ?>" tabindex="-1" aria-hidden="true">
         <div class="modal-dialog">
             <div class="modal-content">
-                <div class="modal-header">
-                    <h5 class="modal-title">Actualizar Estado del Arreglo</h5>
-                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                <div class="modal-header bg-info text-white">
+                    <h5 class="modal-title"><i class="bi bi-arrow-repeat"></i> Actualizar Estado del Arreglo</h5>
+                    <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close"></button>
                 </div>
                 <div class="modal-body">
                     <form action="" method="post">
@@ -543,5 +571,7 @@ $clientes = obtenerClientes($conn);
     <?php endforeach; ?>
 
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.1.3/dist/js/bootstrap.bundle.min.js"></script>
+    <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/select2@4.1.0-rc.0/dist/js/select2.min.js"></script>
 </body>
 </html>
