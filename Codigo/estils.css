@@ -469,7 +469,7 @@ html {
 .modal-body .form-select {
   border-radius: var(--radius);
   border: 1.5px solid var(--color-border);
-  padding: 0.5rem 0.75rem;
+  padding: auto;
   font-size: 0.875rem;
   transition: var(--transition);
   background-color: #f8fafc;
