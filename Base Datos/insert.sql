@@ -44,37 +44,32 @@ INSERT INTO `Cliente` (`idCliente`, `Primer_Nombre`, `Primer_Apellido`, `Telefon
 (9, 'Rosa', 'Vázquez', '778899001', 'Calle Bosque 70'),
 (10, 'Gabriel', 'Pérez', '889900112', 'Calle Lago 80');
 
+-- Insertar datos en Tabla Tipo_Arreglo
+INSERT INTO `Tipo_Arreglo` (`id`, `nombre`) VALUES
+(1, 'Reparación'),
+(2, 'Mantenimiento'),
+(3, 'Actualización'),
+(4, 'Instalación'),
+(5, 'Limpieza');
+
 -- Insertar datos en Tabla Arreglo
 INSERT INTO `Arreglo` 
-(`idArreglo`, `Tipo_Arreglo`, `Nombre_Arreglo`, `Descripcion_Cliente`, `Valor_Pago`, `Fecha_Recibido`, `Fecha_Entrega`, `Marca_idMarca`, `Tecnico_idTecnico`, `Estado_idEstado`) VALUES
-(1, 'Laptop', 'Cambio Pantalla', 'Pantalla rota', 120.00, '2024-11-01', '2024-11-05', 1, 1, 4),
-(2, 'PC', 'Cambio Disco Duro', 'Disco dañado', 150.00, '2024-11-02', '2024-11-06', 2, 2, 4),
-(3, 'Tablet', 'Reparación Cámara', 'Cámara no funciona', 80.00, '2024-11-03', '2024-11-07', 3, 3, 4),
-(4, 'Laptop', 'Limpieza Interna', 'Mucho polvo', 50.00, '2024-11-04', '2024-11-08', 4, 4, 4),
-(5, 'PC', 'Actualización RAM', 'Agregar más RAM', 70.00, '2024-11-05', '2024-11-09', 5, 5, 4),
-(6, 'Laptop', 'Cambio Teclado', 'Teclado no responde', 100.00, '2024-11-06', '2024-11-10', 6, 6, 4),
-(7, 'PC', 'Cambio Fuente Poder', 'Fuente dañada', 130.00, '2024-11-07', '2024-11-11', 7, 7, 4),
-(8, 'Laptop', 'Instalación SO', 'Instalar sistema operativo', 40.00, '2024-11-08', '2024-11-12', 8, 8, 4),
-(9, 'PC', 'Cambio Ventilador', 'Ventilador ruidoso', 60.00, '2024-11-09', '2024-11-13', 9, 9, 4),
-(10, 'Tablet', 'Cambio Batería', 'Batería agotada', 90.00, '2024-11-10', '2024-11-14', 10, 10, 4);
+(`idArreglo`, `Tipo_Dispositivo_idTipo`, `tipo_arreglo_id`, `Nombre_Arreglo`, `Descripcion_Cliente`, `Valor_Pago`, `Fecha_Recibido`, `Fecha_Entrega`, `Marca_idMarca`, `Tecnico_idTecnico`, `Estado_idEstado`) VALUES
+(1, 1, 1, 'Cambio Pantalla', 'Pantalla rota', 120.00, '2024-11-01', '2024-11-05', 1, 1, 4),
+(2, 2, 1, 'Cambio Disco Duro', 'Disco dañado', 150.00, '2024-11-02', '2024-11-06', 2, 2, 4),
+(3, 3, 1, 'Reparación Cámara', 'Cámara no funciona', 80.00, '2024-11-03', '2024-11-07', 3, 3, 4),
+(4, 1, 5, 'Limpieza Interna', 'Mucho polvo', 50.00, '2024-11-04', '2024-11-08', 4, 4, 4),
+(5, 2, 3, 'Actualización RAM', 'Agregar más RAM', 70.00, '2024-11-05', '2024-11-09', 5, 5, 4),
+(6, 1, 1, 'Cambio Teclado', 'Teclado no responde', 100.00, '2024-11-06', '2024-11-10', 6, 6, 4),
+(7, 2, 1, 'Cambio Fuente Poder', 'Fuente dañada', 130.00, '2024-11-07', '2024-11-11', 7, 7, 4),
+(8, 1, 4, 'Instalación SO', 'Instalar sistema operativo', 40.00, '2024-11-08', '2024-11-12', 8, 8, 4),
+(9, 2, 1, 'Cambio Ventilador', 'Ventilador ruidoso', 60.00, '2024-11-09', '2024-11-13', 9, 9, 4),
+(10, 3, 1, 'Cambio Batería', 'Batería agotada', 90.00, '2024-11-10', '2024-11-14', 10, 10, 4);
 
--- Insertar datos en Tabla Diagnóstico
-INSERT INTO `Diagnostico` (`idDiagnostico`, `Componente`, `Valor`, `Descripcion`) VALUES
-(1, 'Pantalla', 100.00, 'Pantalla dañada'),
-(2, 'Disco Duro', 80.00, 'Sectores dañados'),
-(3, 'Teclado', 60.00, 'Teclas no responden'),
-(4, 'Cámara', 40.00, 'Cámara sin funcionamiento'),
-(5, 'RAM', 50.00, 'Error de lectura'),
-(6, 'Placa Base', 200.00, 'Cortocircuito'),
-(7, 'Fuente Poder', 90.00, 'Sin energía'),
-(8, 'Batería', 70.00, 'No carga'),
-(9, 'Sistema Operativo', 30.00, 'Error en instalación'),
-(10, 'Ventilador', 20.00, 'Ruido excesivo');
-
--- Insertar datos en Tabla Detalle Diagnóstico
-INSERT INTO `Detalle_Diagnostico` (`Arreglo_idArreglo`, `Diagnostico_idDiagnostico`) VALUES
-(1, 1), (2, 2), (3, 4), (4, 5), (5, 3), 
-(6, 1), (7, 2), (8, 6), (9, 3), (10, 7);
+-- Insertar datos en Tabla Reingreso_Arreglo
+INSERT INTO `Reingreso_Arreglo` (`Arreglo_idArreglo`, `Fecha_Reingreso`, `Motivo_Reingreso`) VALUES
+(1, '2024-11-15', 'Falla recurrente despues de entrega'),
+(5, '2024-11-11', 'No volvio a encender despues de la entrega');
 
 -- Insertar datos en Tabla Detalle Arreglo
 INSERT INTO `Detalle_Arreglo` (`Cliente_idCliente`, `Arreglo_idArreglo`) VALUES

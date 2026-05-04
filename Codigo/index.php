@@ -7,7 +7,6 @@ $isAdmin = isset($_SESSION['rol_nombre']) && $_SESSION['rol_nombre'] === 'Admini
 // Contadores para el dashboard
 $total_clientes = $conn->query("SELECT COUNT(*) as total FROM Cliente")->fetch_assoc()['total'];
 $total_arreglos = $conn->query("SELECT COUNT(*) as total FROM Arreglo")->fetch_assoc()['total'];
-$total_diagnosticos = $conn->query("SELECT COUNT(*) as total FROM Diagnostico")->fetch_assoc()['total'];
 $total_tecnicos = $conn->query("SELECT COUNT(*) as total FROM Tecnico")->fetch_assoc()['total'];
 $total_marcas = $conn->query("SELECT COUNT(*) as total FROM Marca")->fetch_assoc()['total'];
 
@@ -60,13 +59,6 @@ $valor_total = $conn->query("SELECT COALESCE(SUM(Valor_Pago), 0) as total FROM A
                     <div class="stat-label">Arreglos</div>
                 </div>
             </div>
-            <div class="col-12 col-sm-6 col-md-4 col-xl">
-                <div class="stat-card bg-diagnosticos">
-                    <i class="bi bi-clipboard2-pulse-fill stat-icon"></i>
-                    <div class="stat-number"><?php echo $total_diagnosticos; ?></div>
-                    <div class="stat-label">Diagnosticos</div>
-                </div>
-            </div>
             <?php if ($isAdmin): ?>
             <div class="col-12 col-sm-6 col-md-4 col-xl">
                 <div class="stat-card bg-tecnicos">
@@ -102,7 +94,7 @@ $valor_total = $conn->query("SELECT COALESCE(SUM(Valor_Pago), 0) as total FROM A
                                     <tr>
                                         <th>ID</th>
                                         <th>Nombre</th>
-                                        <th>Tipo</th>
+                                        <th>Tipo Arreglo</th>
                                         <th>Marca</th>
                                         <th>Valor</th>
                                         <th>Tecnico</th>
@@ -116,12 +108,12 @@ $valor_total = $conn->query("SELECT COALESCE(SUM(Valor_Pago), 0) as total FROM A
                                             <td><?php echo htmlspecialchars($arreglo['Nombre_Arreglo']); ?></td>
                                             <td>
                                                 <?php
-                                                    $tipo = strtolower($arreglo['Tipo_Arreglo']);
+                                                    $tipo = strtolower($arreglo['Nombre_Arreglo']);
                                                     $badge_class = 'badge-general';
                                                     if (strpos($tipo, 'hardware') !== false) $badge_class = 'badge-hardware';
                                                     elseif (strpos($tipo, 'software') !== false) $badge_class = 'badge-software';
                                                 ?>
-                                                <span class="badge-rol badge-tipo <?php echo $badge_class; ?>"><?php echo htmlspecialchars($arreglo['Tipo_Arreglo']); ?></span>
+                                                <span class="badge-rol badge-tipo <?php echo $badge_class; ?>"><?php echo htmlspecialchars($arreglo['Nombre_Arreglo']); ?></span>
                                             </td>
                                             <td><?php echo htmlspecialchars($arreglo['Nombre_Marca']); ?></td>
                                             <td><span class="valor-moneda">$<?php echo number_format($arreglo['Valor_Pago'], 0, ',', '.'); ?></span></td>
@@ -190,19 +182,7 @@ $valor_total = $conn->query("SELECT COALESCE(SUM(Valor_Pago), 0) as total FROM A
                                     <span>Nueva Marca</span>
                                 </a>
                             </div>
-                            <div class="col-12 col-sm-6">
-                                <a href="componentes.php" class="quick-access-card">
-                                    <i class="bi bi-cpu-fill"></i>
-                                    <span>Componentes</span>
-                                </a>
-                            </div>
                             <?php endif; ?>
-                            <div class="col-12 col-sm-6">
-                                <a href="diagnostico.php" class="quick-access-card">
-                                    <i class="bi bi-clipboard-plus-fill"></i>
-                                    <span>Diagnostico</span>
-                                </a>
-                            </div>
                         </div>
                     </div>
                 </div>

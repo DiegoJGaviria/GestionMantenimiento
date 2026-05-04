@@ -53,7 +53,6 @@ Codigo/
 ├── marca.php          # Gestión de marcas
 ├── cliente.php        # Gestión de clientes
 ├── arreglo.php        # Gestión de arreglos
-├── diagnostico.php    # Gestión de diagnósticos
 ├── navbar.php         # Barra de navegación
 ├── logout.php         # Cierre de sesión
 ├── estils.css         # Estilos CSS

@@ -27,8 +27,11 @@ function obtenerClientes($conn) {
 
 // HU03 Escenario 1: Creacion Exitosa de Cliente
 if (isset($_POST['crear_cliente'])) {
+    $isAjax = isset($_POST['ajax']) && $_POST['ajax'] === '1';
+    $response = ['success' => false, 'errors' => []];
+
     if (!isset($_POST['csrf_token']) || !hash_equals($_SESSION['csrf_token'], $_POST['csrf_token'])) {
-        $mensaje = "<div class='alert alert-danger'>Error de seguridad. Intente nuevamente.</div>";
+        $response['errors'][] = 'Error de seguridad. Intente nuevamente.';
     } else {
         $primer_nombre = trim($_POST['primer_nombre'] ?? '');
         $primer_apellido = trim($_POST['primer_apellido'] ?? '');
@@ -36,25 +39,41 @@ if (isset($_POST['crear_cliente'])) {
         $direccion = trim($_POST['direccion'] ?? '');
 
         // HU03 Escenario 2: Validacion de campos obligatorios
-        $errors = [];
-        if (empty($primer_nombre)) $errors[] = "Nombres es obligatorio.";
-        if (empty($primer_apellido)) $errors[] = "Apellidos es obligatorio.";
-        if (empty($telefono)) $errors[] = "Telefono es obligatorio.";
-        if (empty($direccion)) $errors[] = "Direccion es obligatorio.";
+        if (empty($primer_nombre)) $response['errors'][] = 'Nombres es obligatorio.';
+        if (empty($primer_apellido)) $response['errors'][] = 'Apellidos es obligatorio.';
+        if (empty($telefono)) $response['errors'][] = 'Telefono es obligatorio.';
+        if (empty($direccion)) $response['errors'][] = 'Direccion es obligatorio.';
 
-        if (empty($errors)) {
+        if (empty($response['errors'])) {
             $stmt = $conn->prepare("INSERT INTO Cliente (Primer_Nombre, Primer_Apellido, Telefono, Direccion) VALUES (?, ?, ?, ?)");
             $stmt->bind_param("ssss", $primer_nombre, $primer_apellido, $telefono, $direccion);
-            
+
             if ($stmt->execute()) {
-                $mensaje = "<div class='alert alert-success'>Cliente creado con exito</div>";
+                $response['success'] = true;
+                $response['cliente'] = [
+                    'idCliente' => $stmt->insert_id,
+                    'primer_nombre' => $primer_nombre,
+                    'primer_apellido' => $primer_apellido,
+                    'telefono' => $telefono,
+                    'direccion' => $direccion
+                ];
             } else {
-                $mensaje = "<div class='alert alert-danger'>Error: " . $stmt->error . "</div>";
+                $response['errors'][] = 'Error: ' . $stmt->error;
             }
             $stmt->close();
-        } else {
-            $mensaje = "<div class='alert alert-danger'>" . implode("<br>", $errors) . "</div>";
         }
+    }
+
+    if ($isAjax) {
+        header('Content-Type: application/json');
+        echo json_encode($response);
+        exit();
+    }
+
+    if ($response['success']) {
+        $mensaje = "<div class='alert alert-success'>Cliente creado con exito</div>";
+    } else {
+        $mensaje = "<div class='alert alert-danger'>" . implode("<br>", $response['errors']) . "</div>";
     }
 }
 
@@ -154,7 +173,7 @@ $clientes = obtenerClientes($conn);
                                 <th>Acciones</th>
                             </tr>
                         </thead>
-                        <tbody>
+                        <tbody id="clientesTablaBody">
                             <?php foreach ($clientes as $cliente): ?>
                             <tr>
                                 <td><?php echo $cliente['idCliente']; ?></td>
@@ -186,7 +205,8 @@ $clientes = obtenerClientes($conn);
                     <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
                 </div>
                 <div class="modal-body">
-                    <form action="" method="post">
+                    <form action="" method="post" id="formCrearCliente">
+                        <div id="crearClienteAlert"></div>
                         <input type="hidden" name="csrf_token" value="<?php echo htmlspecialchars($_SESSION['csrf_token']); ?>">
                         <div class="mb-3">
                             <label for="primer_nombre" class="form-label">Nombres (*)</label>
@@ -249,5 +269,68 @@ $clientes = obtenerClientes($conn);
     <?php endforeach; ?>
 
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.1.3/dist/js/bootstrap.bundle.min.js"></script>
+    <script>
+        const crearClienteForm = document.getElementById('formCrearCliente');
+        const crearClienteAlert = document.getElementById('crearClienteAlert');
+        const clientesTablaBody = document.getElementById('clientesTablaBody');
+
+        function escapeHtml(text) {
+            if (!text) return '';
+            return String(text)
+                .replace(/&/g, '&amp;')
+                .replace(/</g, '&lt;')
+                .replace(/>/g, '&gt;')
+                .replace(/"/g, '&quot;')
+                .replace(/'/g, '&#039;');
+        }
+
+        function mostrarAlerta(html, type) {
+            if (!crearClienteAlert) return;
+            crearClienteAlert.innerHTML = `<div class="alert alert-${type}">${html}</div>`;
+        }
+
+        if (crearClienteForm) {
+            crearClienteForm.addEventListener('submit', async function (event) {
+                event.preventDefault();
+                const formData = new FormData(crearClienteForm);
+                formData.set('ajax', '1');
+
+                try {
+                    const response = await fetch('', {
+                        method: 'POST',
+                        body: formData
+                    });
+                    const data = await response.json();
+
+                    if (data.success) {
+                        const newRow = document.createElement('tr');
+                        newRow.innerHTML = `
+                            <td>${escapeHtml(data.cliente.idCliente)}</td>
+                            <td>${escapeHtml(data.cliente.primer_nombre)}</td>
+                            <td>${escapeHtml(data.cliente.primer_apellido)}</td>
+                            <td>${escapeHtml(data.cliente.telefono)}</td>
+                            <td>${escapeHtml(data.cliente.direccion)}</td>
+                            <td>
+                                <button type="button" class="btn btn-sm btn-warning" disabled>Editar</button>
+                                <button type="button" class="btn btn-sm btn-danger" disabled>Eliminar</button>
+                            </td>
+                        `;
+                        if (clientesTablaBody) {
+                            clientesTablaBody.prepend(newRow);
+                        }
+                        mostrarAlerta('Cliente creado con exito', 'success');
+                        const modalEl = document.getElementById('crearClienteModal');
+                        const modal = bootstrap.Modal.getInstance(modalEl) || new bootstrap.Modal(modalEl);
+                        modal.hide();
+                        crearClienteForm.reset();
+                    } else {
+                        mostrarAlerta(data.errors.join('<br>'), 'danger');
+                    }
+                } catch (error) {
+                    mostrarAlerta('Error de comunicacion. Intente nuevamente.', 'danger');
+                }
+            });
+        }
+    </script>
 </body>
 </html>

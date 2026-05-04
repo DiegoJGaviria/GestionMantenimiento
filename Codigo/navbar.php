@@ -24,15 +24,9 @@
         <li class="nav-item">
           <a class="nav-link" href="cliente.php">Clientes</a>
         </li>
-        <li class="nav-item">
-          <a class="nav-link" href="componentes.php">Componentes</a>
-        </li>
         <?php endif; ?>
         <li class="nav-item">
           <a class="nav-link" href="arreglo.php">Arreglos</a>
-        </li>
-        <li class="nav-item">
-          <a class="nav-link" href="diagnostico.php">Diagnostico</a>
         </li>
       </ul>
       <ul class="navbar-nav ms-auto">
