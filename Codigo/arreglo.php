@@ -119,7 +119,7 @@ if (isset($_POST['crear_arreglo'])) {
         $marca_id = (int) $_POST['marca_id'];
         $tecnico_id = (int) $_POST['tecnico_id'];
         $tipo_arreglo_id = (int) $_POST['tipo_arreglo_id'];
-        $estado_id = 1; // Siempre inicia en "En diagnostico"
+        $estado_id = 1; // Siempre inicia en "En Reparacion"
         $cliente_id = (int) $_POST['cliente_id'];
 
         $conn->begin_transaction();
@@ -337,7 +337,8 @@ $todosReingresos = obtenerTodosReingresos($conn);
             </div>
             <div class="card-body p-0">
                 <div class="table-responsive">
-                    <table class="table table-striped table-hover table-bordered align-middle mb-0" style="font-size:0.9rem;">
+                    <table class="table table-striped table-hover table-bordered align-middle mb-0"
+                        style="font-size:0.9rem;">
                         <thead class="table-dark">
                             <tr>
                                 <th class="text-center" style="width:50px;">ID</th>
@@ -361,7 +362,7 @@ $todosReingresos = obtenerTodosReingresos($conn);
                             <?php foreach ($arreglos as $arreglo):
                                 $reingresos = $todosReingresos[$arreglo['idArreglo']] ?? [];
                                 $totalReingresos = count($reingresos);
-                            ?>
+                                ?>
                                 <tr>
                                     <td class="text-center fw-bold"><?php echo $arreglo['idArreglo']; ?></td>
                                     <td><?php echo htmlspecialchars($arreglo['Nombre_Tipo']); ?></td>
@@ -374,7 +375,6 @@ $todosReingresos = obtenerTodosReingresos($conn);
                                     <td class="text-center">
                                         <span class="badge bg-<?php
                                         echo match ($arreglo['Nombre_Estado']) {
-                                            'En diagnostico' => 'warning',
                                             'En reparacion' => 'info',
                                             'Finalizado' => 'success',
                                             'Entregado' => 'secondary',
@@ -390,13 +390,12 @@ $todosReingresos = obtenerTodosReingresos($conn);
                                     <td><?php echo htmlspecialchars($arreglo['Telefono_Cliente'] ?? '-'); ?></td>
                                     <td class="text-center">
                                         <?php if ($totalReingresos > 0): ?>
-                                            <button type="button"
-                                                class="btn btn-sm btn-outline-warning"
-                                                data-bs-toggle="modal"
+                                            <button type="button" class="btn btn-sm btn-outline-warning" data-bs-toggle="modal"
                                                 data-bs-target="#historialReingresoModal<?php echo $arreglo['idArreglo']; ?>"
                                                 title="Ver historial de reingresos">
                                                 <i class="bi bi-clock-history"></i>
-                                                <span class="badge bg-warning text-dark ms-1"><?php echo $totalReingresos; ?></span>
+                                                <span
+                                                    class="badge bg-warning text-dark ms-1"><?php echo $totalReingresos; ?></span>
                                             </button>
                                         <?php else: ?>
                                             <span class="text-muted small">Sin reingresos</span>
@@ -404,37 +403,37 @@ $todosReingresos = obtenerTodosReingresos($conn);
                                     </td>
                                     <td class="text-center">
                                         <div class="d-flex gap-1 justify-content-center flex-wrap">
-                                        <?php if ($puedeCrearArreglos): ?>
-                                            <button type="button" class="btn btn-sm btn-secondary" data-bs-toggle="modal"
-                                                data-bs-target="#reingresoArregloModal<?php echo $arreglo['idArreglo']; ?>"
-                                                title="Registrar Reingreso">
-                                                <i class="bi bi-arrow-repeat"></i>
-                                            </button>
-                                            <button type="button" class="btn btn-sm btn-warning" data-bs-toggle="modal"
-                                                data-bs-target="#editarArregloModal<?php echo $arreglo['idArreglo']; ?>"
-                                                title="Editar">
-                                                <i class="bi bi-pencil"></i>
-                                            </button>
-                                            <a href="?eliminar=<?php echo $arreglo['idArreglo']; ?>"
-                                                class="btn btn-sm btn-danger"
-                                                onclick="return confirm('¿Estas seguro de eliminar este arreglo?')"
-                                                title="Eliminar">
-                                                <i class="bi bi-trash"></i>
-                                            </a>
-                                        <?php endif; ?>
-                                        <?php if (!$isAdmin): ?>
-                                            <?php if ($arreglo['Estado_idEstado'] == 3): // 3 = Finalizado ?>
-                                                <span class="badge bg-success px-2 py-2">
-                                                    <i class="bi bi-check-circle-fill"></i> Finalizado
-                                                </span>
-                                            <?php else: ?>
-                                                <button type="button" class="btn btn-sm btn-info" data-bs-toggle="modal"
-                                                    data-bs-target="#estadoArregloModal<?php echo $arreglo['idArreglo']; ?>"
-                                                    title="Actualizar Estado">
-                                                    <i class="bi bi-pencil-square"></i> Estado
+                                            <?php if ($puedeCrearArreglos): ?>
+                                                <button type="button" class="btn btn-sm btn-secondary" data-bs-toggle="modal"
+                                                    data-bs-target="#reingresoArregloModal<?php echo $arreglo['idArreglo']; ?>"
+                                                    title="Registrar Reingreso">
+                                                    <i class="bi bi-arrow-repeat"></i>
                                                 </button>
+                                                <button type="button" class="btn btn-sm btn-warning" data-bs-toggle="modal"
+                                                    data-bs-target="#editarArregloModal<?php echo $arreglo['idArreglo']; ?>"
+                                                    title="Editar">
+                                                    <i class="bi bi-pencil"></i>
+                                                </button>
+                                                <a href="?eliminar=<?php echo $arreglo['idArreglo']; ?>"
+                                                    class="btn btn-sm btn-danger"
+                                                    onclick="return confirm('¿Estas seguro de eliminar este arreglo?')"
+                                                    title="Eliminar">
+                                                    <i class="bi bi-trash"></i>
+                                                </a>
                                             <?php endif; ?>
-                                        <?php endif; ?>
+                                            <?php if (!$isAdmin): ?>
+                                                <?php if ($arreglo['Estado_idEstado'] == 3): // 3 = Finalizado ?>
+                                                    <span class="badge bg-success px-2 py-2">
+                                                        <i class="bi bi-check-circle-fill"></i> Finalizado
+                                                    </span>
+                                                <?php else: ?>
+                                                    <button type="button" class="btn btn-sm btn-info" data-bs-toggle="modal"
+                                                        data-bs-target="#estadoArregloModal<?php echo $arreglo['idArreglo']; ?>"
+                                                        title="Actualizar Estado">
+                                                        <i class="bi bi-pencil-square"></i> Estado
+                                                    </button>
+                                                <?php endif; ?>
+                                            <?php endif; ?>
                                         </div>
                                     </td>
                                 </tr>
@@ -459,11 +458,7 @@ $todosReingresos = obtenerTodosReingresos($conn);
                     <form action="" method="post" id="formCrearArreglo">
                         <input type="hidden" name="csrf_token"
                             value="<?php echo htmlspecialchars($_SESSION['csrf_token']); ?>">
-                        <div class="alert alert-info">
-                            <i class="bi bi-info-circle"></i> El arreglo se creara con estado <strong>"En
-                                diagnostico"</strong>. Solo el tecnico asignado puede cambiar el estado.
-                        </div>
-
+                       
                         <div class="row mb-3">
                             <div class="col-md-4">
                                 <label class="form-label">Tipo de Dispositivo (*)</label>
@@ -542,7 +537,7 @@ $todosReingresos = obtenerTodosReingresos($conn);
                                 <input type="date" class="form-control" name="fecha_recibido" required>
                             </div>
                             <div class="col-md-4">
-                                <label class="form-label">Fecha de Entrega</label>
+                                <label class="form-label">Fecha de Posible Entrega</label>
                                 <input type="date" class="form-control" name="fecha_entrega">
                             </div>
                         </div>
@@ -561,48 +556,51 @@ $todosReingresos = obtenerTodosReingresos($conn);
     <?php foreach ($arreglos as $arreglo):
         $reingresos = $todosReingresos[$arreglo['idArreglo']] ?? [];
         $totalReingresos = count($reingresos);
-    ?>
+        ?>
 
         <!-- Modal historial de reingresos -->
         <?php if ($totalReingresos > 0): ?>
-        <div class="modal fade" id="historialReingresoModal<?php echo $arreglo['idArreglo']; ?>" tabindex="-1" aria-hidden="true">
-            <div class="modal-dialog modal-lg">
-                <div class="modal-content">
-                    <div class="modal-header bg-warning">
-                        <h5 class="modal-title">
-                            <i class="bi bi-clock-history"></i>Arreglo #<?php echo $arreglo['idArreglo']; ?>
-                            <small class="ms-2 text-dark"><?php echo htmlspecialchars($arreglo['Nombre_Arreglo']); ?></small>
-                        </h5>
-                        <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
-                    </div>
-                    <div class="modal-body">
-                        <table class="table table-bordered table-sm align-middle">
-                            <thead class="table-secondary">
-                                <tr>
-                                    <th class="text-center" style="width:40px;">#</th>
-                                    <th class="text-center" style="width:130px;">Fecha Reingreso</th>
-                                    <th>Motivo</th>
-                                    <th class="text-center" style="width:150px;">Fecha Registro</th>
-                                </tr>
-                            </thead>
-                            <tbody>
-                                <?php foreach ($reingresos as $i => $r): ?>
+            <div class="modal fade" id="historialReingresoModal<?php echo $arreglo['idArreglo']; ?>" tabindex="-1"
+                aria-hidden="true">
+                <div class="modal-dialog modal-lg">
+                    <div class="modal-content">
+                        <div class="modal-header bg-warning">
+                            <h5 class="modal-title">
+                                <i class="bi bi-clock-history"></i>Arreglo #<?php echo $arreglo['idArreglo']; ?>
+                                <small
+                                    class="ms-2 text-dark"><?php echo htmlspecialchars($arreglo['Nombre_Arreglo']); ?></small>
+                            </h5>
+                            <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                        </div>
+                        <div class="modal-body">
+                            <table class="table table-bordered table-sm align-middle">
+                                <thead class="table-secondary">
                                     <tr>
-                                        <td class="text-center fw-bold"><?php echo $totalReingresos - $i; ?></td>
-                                        <td class="text-center"><?php echo htmlspecialchars($r['Fecha_Reingreso']); ?></td>
-                                        <td><?php echo htmlspecialchars($r['Motivo_Reingreso']); ?></td>
-                                        <td class="text-center text-muted small"><?php echo htmlspecialchars($r['Fecha_Registro']); ?></td>
+                                        <th class="text-center" style="width:40px;">#</th>
+                                        <th class="text-center" style="width:130px;">Fecha Reingreso</th>
+                                        <th>Motivo</th>
+                                        <th class="text-center" style="width:150px;">Fecha Registro</th>
                                     </tr>
-                                <?php endforeach; ?>
-                            </tbody>
-                        </table>
-                    </div>
-                    <div class="modal-footer">
-                        <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cerrar</button>
+                                </thead>
+                                <tbody>
+                                    <?php foreach ($reingresos as $i => $r): ?>
+                                        <tr>
+                                            <td class="text-center fw-bold"><?php echo $totalReingresos - $i; ?></td>
+                                            <td class="text-center"><?php echo htmlspecialchars($r['Fecha_Reingreso']); ?></td>
+                                            <td><?php echo htmlspecialchars($r['Motivo_Reingreso']); ?></td>
+                                            <td class="text-center text-muted small">
+                                                <?php echo htmlspecialchars($r['Fecha_Registro']); ?></td>
+                                        </tr>
+                                    <?php endforeach; ?>
+                                </tbody>
+                            </table>
+                        </div>
+                        <div class="modal-footer">
+                            <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cerrar</button>
+                        </div>
                     </div>
                 </div>
             </div>
-        </div>
         <?php endif; ?>
 
         <!-- Modal para editar arreglo (Admin) -->
@@ -722,7 +720,8 @@ $todosReingresos = obtenerTodosReingresos($conn);
                     <div class="modal-header bg-secondary text-white">
                         <h5 class="modal-title"><i class="bi bi-arrow-repeat"></i> Registrar Reingreso — Arreglo
                             #<?php echo $arreglo['idArreglo']; ?>
-                            <small class="ms-2 opacity-75"><?php echo htmlspecialchars($arreglo['Nombre_Arreglo']); ?></small>
+                            <small
+                                class="ms-2 opacity-75"><?php echo htmlspecialchars($arreglo['Nombre_Arreglo']); ?></small>
                         </h5>
                         <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"
                             aria-label="Close"></button>
@@ -748,30 +747,31 @@ $todosReingresos = obtenerTodosReingresos($conn);
                         </form>
 
                         <?php if ($totalReingresos > 0): ?>
-                        <hr>
-                        <h6 class="mt-3"><i class="bi bi-clock-history"></i> Historial de Reingresos
-                            <span class="badge bg-secondary"><?php echo $totalReingresos; ?></span>
-                        </h6>
-                        <table class="table table-sm table-bordered align-middle mt-2">
-                            <thead class="table-secondary">
-                                <tr>
-                                    <th class="text-center" style="width:40px;">#</th>
-                                    <th class="text-center" style="width:130px;">Fecha</th>
-                                    <th>Motivo</th>
-                                    <th class="text-center" style="width:150px;">Registrado</th>
-                                </tr>
-                            </thead>
-                            <tbody>
-                                <?php foreach ($reingresos as $i => $r): ?>
+                            <hr>
+                            <h6 class="mt-3"><i class="bi bi-clock-history"></i> Historial de Reingresos
+                                <span class="badge bg-secondary"><?php echo $totalReingresos; ?></span>
+                            </h6>
+                            <table class="table table-sm table-bordered align-middle mt-2">
+                                <thead class="table-secondary">
                                     <tr>
-                                        <td class="text-center fw-bold"><?php echo $totalReingresos - $i; ?></td>
-                                        <td class="text-center"><?php echo htmlspecialchars($r['Fecha_Reingreso']); ?></td>
-                                        <td><?php echo htmlspecialchars($r['Motivo_Reingreso']); ?></td>
-                                        <td class="text-center text-muted small"><?php echo htmlspecialchars($r['Fecha_Registro']); ?></td>
+                                        <th class="text-center" style="width:40px;">#</th>
+                                        <th class="text-center" style="width:130px;">Fecha</th>
+                                        <th>Motivo</th>
+                                        <th class="text-center" style="width:150px;">Registrado</th>
                                     </tr>
-                                <?php endforeach; ?>
-                            </tbody>
-                        </table>
+                                </thead>
+                                <tbody>
+                                    <?php foreach ($reingresos as $i => $r): ?>
+                                        <tr>
+                                            <td class="text-center fw-bold"><?php echo $totalReingresos - $i; ?></td>
+                                            <td class="text-center"><?php echo htmlspecialchars($r['Fecha_Reingreso']); ?></td>
+                                            <td><?php echo htmlspecialchars($r['Motivo_Reingreso']); ?></td>
+                                            <td class="text-center text-muted small">
+                                                <?php echo htmlspecialchars($r['Fecha_Registro']); ?></td>
+                                        </tr>
+                                    <?php endforeach; ?>
+                                </tbody>
+                            </table>
                         <?php endif; ?>
                     </div>
                 </div>
@@ -801,7 +801,6 @@ $todosReingresos = obtenerTodosReingresos($conn);
                             <p><strong>Estado actual:</strong>
                                 <span class="badge bg-<?php
                                 echo match ($arreglo['Nombre_Estado']) {
-                                    'En diagnostico' => 'warning',
                                     'En reparacion' => 'info',
                                     'Finalizado' => 'success',
                                     'Entregado' => 'secondary',
