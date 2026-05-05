@@ -129,6 +129,15 @@ CREATE INDEX idx_arreglo_estado ON Arreglo(Estado_idEstado);
 CREATE INDEX idx_arreglo_tecnico ON Arreglo(Tecnico_idTecnico);
 CREATE INDEX idx_reingreso_arreglo ON Reingreso_Arreglo(Arreglo_idArreglo);
 
+CREATE TABLE Permiso_Modulo (
+  idPermiso INT NOT NULL AUTO_INCREMENT,
+  Tecnico_idTecnico INT NOT NULL,
+  modulo VARCHAR(50) NOT NULL,
+  PRIMARY KEY (idPermiso),
+  UNIQUE KEY uq_tecnico_modulo (Tecnico_idTecnico, modulo),
+  CONSTRAINT fk_Permiso_Tecnico FOREIGN KEY (Tecnico_idTecnico) REFERENCES Tecnico(idTecnico) ON DELETE CASCADE
+);
+
 -- =============================================================
 -- DATOS DE PRUEBA
 -- =============================================================
@@ -145,10 +154,9 @@ INSERT INTO Marca (idMarca, Nombre_Marca) VALUES
 
 -- Estados
 INSERT INTO Estado (idEstado, Nombre_Estado) VALUES
-(1, 'En diagnostico'),
-(2, 'En reparacion'),
-(3, 'Finalizado'),
-(4, 'Entregado');
+(1, 'En reparacion'),
+(2, 'Finalizado'),
+(3, 'Entregado');
 
 -- Tipos de Dispositivo
 INSERT INTO Tipo_Dispositivo (idTipoDispositivo, Nombre_Tipo, Descripcion) VALUES
@@ -178,10 +186,9 @@ INSERT INTO Cliente (idCliente, Primer_Nombre, Primer_Apellido, Telefono, Direcc
 -- Tipos de Arreglo
 INSERT INTO Tipo_Arreglo (id, nombre) VALUES
 (1, 'Reparación'),
-(2, 'Mantenimiento'),
-(3, 'Actualización'),
-(4, 'Instalación'),
-(5, 'Limpieza');
+(2, 'Mantenimiento Preventivo'),
+(3, 'Mantenimiento Correctivo');
+
 
 -- Arreglos de prueba
 INSERT INTO Arreglo 
@@ -189,7 +196,7 @@ INSERT INTO Arreglo
 (1, 1, 1, 'Cambio Pantalla', 'Pantalla rota', 120000, '2024-11-01', '2024-11-05', 1, 2, 3),
 (2, 2, 1, 'Cambio Disco Duro', 'Disco dañado', 150000, '2024-11-02', '2024-11-06', 2, 3, 3),
 (3, 3, 1, 'Reparacion Camara', 'Camara no funciona', 80000, '2024-11-03', '2024-11-07', 3, 5, 3),
-(4, 1, 5, 'Cambio de Bateria', 'No enciende sin cargador', 65000, '2024-11-10', NULL, 5, 2, 3),
+(4, 1, 1, 'Cambio de Bateria', 'No enciende sin cargador', 65000, '2024-11-10', NULL, 5, 2, 3),
 (5, 2, 2, 'Limpieza y Mantenimiento', 'Muy lento y se calienta', 50000, '2024-11-12', NULL, 4, 3, 3);
 
 -- Detalle Arreglo (relacion con clientes)

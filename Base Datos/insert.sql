@@ -1,5 +1,15 @@
 USE `sistema_arreglo_computadores`;
 
+-- Tabla de permisos por módulo para técnicos
+CREATE TABLE IF NOT EXISTS Permiso_Modulo (
+  idPermiso INT NOT NULL AUTO_INCREMENT,
+  Tecnico_idTecnico INT NOT NULL,
+  modulo VARCHAR(50) NOT NULL,
+  PRIMARY KEY (idPermiso),
+  UNIQUE KEY uq_tecnico_modulo (Tecnico_idTecnico, modulo),
+  CONSTRAINT fk_Permiso_Tecnico FOREIGN KEY (Tecnico_idTecnico) REFERENCES Tecnico(idTecnico) ON DELETE CASCADE
+);
+
 -- Insertar datos en Tabla Rol
 INSERT INTO `Rol` (`idRol`, `Nombre_Rol`) VALUES
 (1, 'Administrador'),
@@ -47,10 +57,9 @@ INSERT INTO `Cliente` (`idCliente`, `Primer_Nombre`, `Primer_Apellido`, `Telefon
 -- Insertar datos en Tabla Tipo_Arreglo
 INSERT INTO `Tipo_Arreglo` (`id`, `nombre`) VALUES
 (1, 'Reparación'),
-(2, 'Mantenimiento'),
-(3, 'Actualización'),
-(4, 'Instalación'),
-(5, 'Limpieza');
+(2, 'Mantenimiento Preventivo'),
+(3, 'Mantenimiento Correctivo');
+
 
 -- Insertar datos en Tabla Arreglo
 INSERT INTO `Arreglo` 
@@ -58,11 +67,11 @@ INSERT INTO `Arreglo`
 (1, 1, 1, 'Cambio Pantalla', 'Pantalla rota', 120.00, '2024-11-01', '2024-11-05', 1, 1, 4),
 (2, 2, 1, 'Cambio Disco Duro', 'Disco dañado', 150.00, '2024-11-02', '2024-11-06', 2, 2, 4),
 (3, 3, 1, 'Reparación Cámara', 'Cámara no funciona', 80.00, '2024-11-03', '2024-11-07', 3, 3, 4),
-(4, 1, 5, 'Limpieza Interna', 'Mucho polvo', 50.00, '2024-11-04', '2024-11-08', 4, 4, 4),
-(5, 2, 3, 'Actualización RAM', 'Agregar más RAM', 70.00, '2024-11-05', '2024-11-09', 5, 5, 4),
+(4, 1, 2, 'Limpieza Interna', 'Mucho polvo', 50.00, '2024-11-04', '2024-11-08', 4, 4, 4),
+(5, 2, 2, 'Actualización RAM', 'Agregar más RAM', 70.00, '2024-11-05', '2024-11-09', 5, 5, 4),
 (6, 1, 1, 'Cambio Teclado', 'Teclado no responde', 100.00, '2024-11-06', '2024-11-10', 6, 6, 4),
 (7, 2, 1, 'Cambio Fuente Poder', 'Fuente dañada', 130.00, '2024-11-07', '2024-11-11', 7, 7, 4),
-(8, 1, 4, 'Instalación SO', 'Instalar sistema operativo', 40.00, '2024-11-08', '2024-11-12', 8, 8, 4),
+(8, 1, 1, 'Instalación SO', 'Instalar sistema operativo', 40.00, '2024-11-08', '2024-11-12', 8, 8, 4),
 (9, 2, 1, 'Cambio Ventilador', 'Ventilador ruidoso', 60.00, '2024-11-09', '2024-11-13', 9, 9, 4),
 (10, 3, 1, 'Cambio Batería', 'Batería agotada', 90.00, '2024-11-10', '2024-11-14', 10, 10, 4);
 

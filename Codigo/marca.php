@@ -10,10 +10,11 @@ if (session_status() === PHP_SESSION_NONE) {
 include("auth.php"); // Include authentication
 include("conexion.php");
 
-if (!isset($_SESSION['rol_nombre']) || $_SESSION['rol_nombre'] !== 'Administrador') {
+if (!tienePermiso('marcas')) {
     header('Location: index.php');
     exit();
 }
+$isAdmin = isset($_SESSION['rol_nombre']) && $_SESSION['rol_nombre'] === 'Administrador';
 
 // CSRF token generation
 if (empty($_SESSION['csrf_token'])) {
@@ -169,41 +170,45 @@ $marcas = obtenerMarcas($conn);
 
 <body class="bg-light">
     <?php include 'navbar.php'; ?>
-    <div class="container mt-5">
-        <?php if ($mensaje): echo $mensaje; endif; ?>
-        <div class="card">
-            <div class="card-header d-flex justify-content-between align-items-center">
-                <h2>Listar Marcas</h2>
+    <?php if ($mensaje): echo $mensaje; endif; ?>
+    <div class="container-fluid px-4 mt-4">
+        <div class="card shadow-sm">
+            <div class="card-header d-flex justify-content-between align-items-center py-3">
+                <h4 class="mb-0"><i class="bi bi-tags"></i> Listar Marcas</h4>
                 <button type="button" class="btn btn-primary" data-bs-toggle="modal" data-bs-target="#crearMarcaModal">
-                    Crear Marca
+                    <i class="bi bi-plus-lg"></i> Crear Marca
                 </button>
             </div>
-            <div class="card-body">
-                <table class="table table-striped">
-                    <thead>
+            <div class="card-body p-0">
+                <div class="table-responsive">
+                <table class="table table-striped table-hover table-bordered align-middle mb-0" style="font-size:0.9rem;">
+                    <thead class="table-dark">
                         <tr>
-                            <th>ID</th>
+                            <th class="text-center" style="width:50px;">ID</th>
                             <th>Nombre</th>
-                            <th>Acciones</th>
+                            <th class="text-center" style="width:130px;">Acciones</th>
                         </tr>
                     </thead>
                     <tbody>
                         <?php foreach ($marcas as $marca): ?>
                             <tr>
-                                <td><?php echo htmlspecialchars($marca['idMarca']); ?></td>
+                                <td class="text-center fw-bold"><?php echo htmlspecialchars($marca['idMarca']); ?></td>
                                 <td><?php echo htmlspecialchars($marca['Nombre_Marca']); ?></td>
-                                <td>
-                                    <button type="button" class="btn btn-sm btn-warning" data-bs-toggle="modal" data-bs-target="#editarMarcaModal<?php echo $marca['idMarca']; ?>">
-                                        <i class="bi bi-pencil"></i> Editar
-                                    </button>
-                                    <a href="?eliminar=<?php echo $marca['idMarca']; ?>" class="btn btn-sm btn-danger" onclick="return confirm('¿Estás seguro de que quieres eliminar esta marca?')">
-                                        <i class="bi bi-trash"></i> Eliminar
-                                    </a>
+                                <td class="text-center">
+                                    <div class="d-flex gap-1 justify-content-center">
+                                        <button type="button" class="btn btn-sm btn-warning" data-bs-toggle="modal" data-bs-target="#editarMarcaModal<?php echo $marca['idMarca']; ?>" title="Editar">
+                                            <i class="bi bi-pencil"></i>
+                                        </button>
+                                        <a href="?eliminar=<?php echo $marca['idMarca']; ?>" class="btn btn-sm btn-danger" onclick="return confirm('¿Estás seguro de que quieres eliminar esta marca?')" title="Eliminar">
+                                            <i class="bi bi-trash"></i>
+                                        </a>
+                                    </div>
                                 </td>
                             </tr>
                         <?php endforeach; ?>
                     </tbody>
                 </table>
+                </div>
             </div>
         </div>
     </div>

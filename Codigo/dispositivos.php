@@ -6,11 +6,11 @@
 include('auth.php');
 include("conexion.php");
 
-// Solo administradores pueden acceder
-if (!isset($_SESSION['rol_nombre']) || $_SESSION['rol_nombre'] !== 'Administrador') {
+if (!tienePermiso('dispositivos')) {
     header('Location: index.php');
     exit();
 }
+$isAdmin = isset($_SESSION['rol_nombre']) && $_SESSION['rol_nombre'] === 'Administrador';
 
 // CSRF token
 if (empty($_SESSION['csrf_token'])) {
@@ -126,36 +126,40 @@ $tipos = obtenerTiposDispositivo($conn);
     <?php include 'navbar.php'; ?>
     <?php echo $mensaje; ?>
 
-    <div class="container mt-4">
-        <div class="card">
-            <div class="card-header d-flex justify-content-between align-items-center">
-                <h2>Tipos de Dispositivo</h2>
+    <div class="container-fluid px-4 mt-4">
+        <div class="card shadow-sm">
+            <div class="card-header d-flex justify-content-between align-items-center py-3">
+                <h4 class="mb-0"><i class="bi bi-laptop"></i> Tipos de Dispositivo</h4>
                 <button type="button" class="btn btn-primary" data-bs-toggle="modal" data-bs-target="#crearTipoModal">
-                    Crear Tipo de Dispositivo
+                    <i class="bi bi-plus-lg"></i> Crear Tipo de Dispositivo
                 </button>
             </div>
-            <div class="card-body">
+            <div class="card-body p-0">
                 <div class="table-responsive">
-                    <table class="table table-striped">
-                        <thead>
+                    <table class="table table-striped table-hover table-bordered align-middle mb-0" style="font-size:0.9rem;">
+                        <thead class="table-dark">
                             <tr>
-                                <th>ID</th>
+                                <th class="text-center" style="width:50px;">ID</th>
                                 <th>Nombre</th>
                                 <th>Descripcion</th>
-                                <th>Acciones</th>
+                                <th class="text-center" style="width:130px;">Acciones</th>
                             </tr>
                         </thead>
                         <tbody>
                             <?php foreach ($tipos as $tipo): ?>
                             <tr>
-                                <td><?php echo $tipo['idTipoDispositivo']; ?></td>
+                                <td class="text-center fw-bold"><?php echo $tipo['idTipoDispositivo']; ?></td>
                                 <td><?php echo htmlspecialchars($tipo['Nombre_Tipo']); ?></td>
                                 <td><?php echo htmlspecialchars($tipo['Descripcion'] ?? ''); ?></td>
-                                <td>
-                                    <button type="button" class="btn btn-sm btn-warning" data-bs-toggle="modal" data-bs-target="#editarTipoModal<?php echo $tipo['idTipoDispositivo']; ?>">
-                                        Editar
-                                    </button>
-                                    <a href="?eliminar=<?php echo $tipo['idTipoDispositivo']; ?>" class="btn btn-sm btn-danger" onclick="return confirm('¿Estas seguro de que quieres eliminar este tipo de dispositivo?')">Eliminar</a>
+                                <td class="text-center">
+                                    <div class="d-flex gap-1 justify-content-center">
+                                        <button type="button" class="btn btn-sm btn-warning" data-bs-toggle="modal" data-bs-target="#editarTipoModal<?php echo $tipo['idTipoDispositivo']; ?>" title="Editar">
+                                            <i class="bi bi-pencil"></i>
+                                        </button>
+                                        <a href="?eliminar=<?php echo $tipo['idTipoDispositivo']; ?>" class="btn btn-sm btn-danger" onclick="return confirm('¿Estas seguro de que quieres eliminar este tipo de dispositivo?')" title="Eliminar">
+                                            <i class="bi bi-trash"></i>
+                                        </a>
+                                    </div>
                                 </td>
                             </tr>
                             <?php endforeach; ?>

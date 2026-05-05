@@ -1,5 +1,5 @@
 <?php
-session_start();
+include('auth.php');
 include("conexion.php");
 
 $isAdmin = isset($_SESSION['rol_nombre']) && $_SESSION['rol_nombre'] === 'Administrador';

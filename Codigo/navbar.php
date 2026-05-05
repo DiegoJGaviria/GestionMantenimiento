@@ -16,6 +16,9 @@
           <a class="nav-link" href="tecnicos.php">Tecnicos</a>
         </li>
         <li class="nav-item">
+          <a class="nav-link" href="permisos.php">Permisos</a>
+        </li>
+        <li class="nav-item">
           <a class="nav-link" href="dispositivos.php">Dispositivos</a>
         </li>
         <li class="nav-item">
@@ -24,6 +27,22 @@
         <li class="nav-item">
           <a class="nav-link" href="cliente.php">Clientes</a>
         </li>
+        <?php else: ?>
+        <?php if (tienePermiso('clientes')): ?>
+        <li class="nav-item">
+          <a class="nav-link" href="cliente.php">Clientes</a>
+        </li>
+        <?php endif; ?>
+        <?php if (tienePermiso('dispositivos')): ?>
+        <li class="nav-item">
+          <a class="nav-link" href="dispositivos.php">Dispositivos</a>
+        </li>
+        <?php endif; ?>
+        <?php if (tienePermiso('marcas')): ?>
+        <li class="nav-item">
+          <a class="nav-link" href="marca.php">Marcas</a>
+        </li>
+        <?php endif; ?>
         <?php endif; ?>
         <li class="nav-item">
           <a class="nav-link" href="arreglo.php">Arreglos</a>

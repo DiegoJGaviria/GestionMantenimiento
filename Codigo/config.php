@@ -7,7 +7,7 @@
 // Database configuration
 define('DB_HOST', 'localhost');
 define('DB_USER', 'root');
-define('DB_PASS', 'DjGr1999*'); // WARNING: Change this in production!
+define('DB_PASS', '140226'); // WARNING: Change this in production!
 define('DB_NAME', 'sistema_arreglo_computadores');
 
 // Application configuration

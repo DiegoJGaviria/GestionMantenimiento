@@ -7,7 +7,8 @@
 include('auth.php');
 include("conexion.php");
 
-if (!isset($_SESSION['rol_nombre']) || $_SESSION['rol_nombre'] !== 'Administrador') {
+$isAdmin = isset($_SESSION['rol_nombre']) && $_SESSION['rol_nombre'] === 'Administrador';
+if (!$isAdmin) {
     header('Location: index.php');
     exit();
 }
@@ -16,6 +17,22 @@ if (!isset($_SESSION['rol_nombre']) || $_SESSION['rol_nombre'] !== 'Administrado
 if (empty($_SESSION['csrf_token'])) {
     $_SESSION['csrf_token'] = bin2hex(random_bytes(32));
 }
+
+// Auto-crear tabla de permisos si no existe
+$conn->query("CREATE TABLE IF NOT EXISTS Permiso_Modulo (
+    id INT AUTO_INCREMENT PRIMARY KEY,
+    Tecnico_idTecnico INT NOT NULL,
+    modulo VARCHAR(50) NOT NULL,
+    UNIQUE KEY uq_tecnico_modulo (Tecnico_idTecnico, modulo),
+    FOREIGN KEY (Tecnico_idTecnico) REFERENCES Tecnico(idTecnico) ON DELETE CASCADE
+)");
+
+$modulosDisponibles = [
+    'clientes'     => ['nombre' => 'Clientes',     'icono' => 'bi-people',      'descripcion' => 'Ver, crear, editar y eliminar clientes'],
+    'dispositivos' => ['nombre' => 'Dispositivos', 'icono' => 'bi-laptop',      'descripcion' => 'Ver, crear, editar y eliminar tipos de dispositivo'],
+    'marcas'       => ['nombre' => 'Marcas',       'icono' => 'bi-tags',        'descripcion' => 'Ver, crear, editar y eliminar marcas'],
+    'arreglos'     => ['nombre' => 'Arreglos',     'icono' => 'bi-tools',       'descripcion' => 'Crear nuevos arreglos y ver todos los arreglos del sistema'],
+];
 
 function obtenerTecnicos($conn) {
     $sql = "SELECT u.*, r.Nombre_Rol FROM Tecnico u LEFT JOIN Rol r ON u.Rol_idRol = r.idRol";
@@ -31,7 +48,9 @@ function obtenerRoles($conn) {
 
 // Crear tecnico
 if (isset($_POST['crear_tecnico'])) {
-    if (!isset($_POST['csrf_token']) || !hash_equals($_SESSION['csrf_token'], $_POST['csrf_token'])) {
+    if (!$isAdmin) {
+        $_SESSION['mensaje'] = "<div class='alert alert-danger'>Solo el administrador puede crear tecnicos.</div>";
+    } elseif (!isset($_POST['csrf_token']) || !hash_equals($_SESSION['csrf_token'], $_POST['csrf_token'])) {
         $_SESSION['mensaje'] = "<div class='alert alert-danger'>Error de seguridad. Intente nuevamente.</div>";
     } else {
         $nombre_tecnico = trim($_POST['nombre_tecnico'] ?? '');
@@ -133,6 +152,42 @@ if (isset($_POST['restablecer_contrasena'])) {
     exit();
 }
 
+// Guardar permisos (solo admin)
+if (isset($_POST['guardar_permisos'])) {
+    if (!$isAdmin) {
+        $_SESSION['mensaje'] = "<div class='alert alert-danger'>Solo el administrador puede gestionar permisos.</div>";
+    } elseif (!isset($_POST['csrf_token']) || !hash_equals($_SESSION['csrf_token'], $_POST['csrf_token'])) {
+        $_SESSION['mensaje'] = "<div class='alert alert-danger'>Error de seguridad. Intente nuevamente.</div>";
+    } else {
+        $tecnico_id = (int)($_POST['tecnico_id'] ?? 0);
+        $modulosSeleccionados = $_POST['modulos'] ?? [];
+        $conn->begin_transaction();
+        try {
+            $stmt = $conn->prepare("DELETE FROM Permiso_Modulo WHERE Tecnico_idTecnico = ?");
+            $stmt->bind_param("i", $tecnico_id);
+            $stmt->execute();
+            $stmt->close();
+            if (!empty($modulosSeleccionados)) {
+                $stmt = $conn->prepare("INSERT INTO Permiso_Modulo (Tecnico_idTecnico, modulo) VALUES (?, ?)");
+                foreach ($modulosSeleccionados as $modulo) {
+                    if (array_key_exists($modulo, $modulosDisponibles)) {
+                        $stmt->bind_param("is", $tecnico_id, $modulo);
+                        $stmt->execute();
+                    }
+                }
+                $stmt->close();
+            }
+            $conn->commit();
+            $_SESSION['mensaje'] = "<div class='alert alert-success'>Permisos actualizados correctamente.</div>";
+        } catch (Exception $e) {
+            $conn->rollback();
+            $_SESSION['mensaje'] = "<div class='alert alert-danger'>Error: " . htmlspecialchars($e->getMessage()) . "</div>";
+        }
+    }
+    header("Location: tecnicos.php");
+    exit();
+}
+
 // Eliminar tecnico
 if (isset($_GET['eliminar'])) {
     $id = (int) $_GET['eliminar'];
@@ -180,6 +235,17 @@ if (isset($_SESSION['mensaje'])) {
     unset($_SESSION['mensaje']);
 }
 
+// Cargar permisos actuales agrupados por tecnico (solo admin los necesita)
+$permisosActuales = [];
+if ($isAdmin) {
+    $result = $conn->query("SELECT Tecnico_idTecnico, modulo FROM Permiso_Modulo");
+    if ($result) {
+        foreach ($result->fetch_all(MYSQLI_ASSOC) as $p) {
+            $permisosActuales[$p['Tecnico_idTecnico']][] = $p['modulo'];
+        }
+    }
+}
+
 $tecnicos = obtenerTecnicos($conn);
 $roles = obtenerRoles($conn);
 ?>
@@ -198,45 +264,48 @@ $roles = obtenerRoles($conn);
     <?php include 'navbar.php'; ?>
     <?php echo $mensaje; ?>
 
-    <div class="container mt-4">
-        <div class="card">
-            <div class="card-header d-flex justify-content-between align-items-center">
-                <h2>Listar Tecnicos</h2>
+    <div class="container-fluid px-4 mt-4">
+        <div class="card shadow-sm">
+            <div class="card-header d-flex justify-content-between align-items-center py-3">
+                <h4 class="mb-0"><i class="bi bi-people"></i> Listar Tecnicos</h4>
+                <?php if ($isAdmin): ?>
                 <button type="button" class="btn btn-primary" data-bs-toggle="modal" data-bs-target="#crearTecnicoModal">
-                    Crear Tecnico
+                    <i class="bi bi-plus-lg"></i> Crear Tecnico
                 </button>
+                <?php endif; ?>
             </div>
-            <div class="card-body">
+            <div class="card-body p-0">
                 <div class="table-responsive">
-                    <table class="table table-striped">
-                        <thead>
+                    <table class="table table-striped table-hover table-bordered align-middle mb-0" style="font-size:0.9rem;">
+                        <thead class="table-dark">
                             <tr>
-                                <th>ID</th>
+                                <th class="text-center" style="width:50px;">ID</th>
                                 <th>Nombre</th>
                                 <th>Correo</th>
-                                <th>Rol</th>
-                                <th>Acciones</th>
+                                <th class="text-center">Rol</th>
+                                <th class="text-center" style="width:130px;">Acciones</th>
                             </tr>
                         </thead>
                         <tbody>
                             <?php foreach ($tecnicos as $tecnico): ?>
                             <tr>
-                                <td><?php echo $tecnico['idTecnico']; ?></td>
+                                <td class="text-center fw-bold"><?php echo $tecnico['idTecnico']; ?></td>
                                 <td><?php echo htmlspecialchars($tecnico['Nombre_Tecnico']); ?></td>
                                 <td><?php echo htmlspecialchars($tecnico['Correo']); ?></td>
-                                <td>
+                                <td class="text-center">
                                     <span class="badge bg-<?php echo ($tecnico['Nombre_Rol'] === 'Administrador') ? 'danger' : 'primary'; ?>">
                                         <?php echo htmlspecialchars($tecnico['Nombre_Rol']); ?>
                                     </span>
                                 </td>
-                                <td>
-                                    <button type="button" class="btn btn-sm btn-warning" data-bs-toggle="modal" data-bs-target="#editarTecnicoModal<?php echo $tecnico['idTecnico']; ?>">
-                                        Editar
-                                    </button>
-                                    <button type="button" class="btn btn-sm btn-info" data-bs-toggle="modal" data-bs-target="#resetPassModal<?php echo $tecnico['idTecnico']; ?>">
-                                        Cambiar Contrasena
-                                    </button>
-                                    <a href="?eliminar=<?php echo $tecnico['idTecnico']; ?>" class="btn btn-sm btn-danger" onclick="return confirm('¿Estas seguro?')">Eliminar</a>
+                                <td class="text-center">
+                                    <div class="d-flex gap-1 justify-content-center">
+                                        <button type="button" class="btn btn-sm btn-warning" data-bs-toggle="modal" data-bs-target="#editarTecnicoModal<?php echo $tecnico['idTecnico']; ?>" title="Editar">
+                                            <i class="bi bi-pencil"></i>
+                                        </button>
+                                        <a href="?eliminar=<?php echo $tecnico['idTecnico']; ?>" class="btn btn-sm btn-danger" onclick="return confirm('¿Estas seguro?')" title="Eliminar">
+                                            <i class="bi bi-trash"></i>
+                                        </a>
+                                    </div>
                                 </td>
                             </tr>
                             <?php endforeach; ?>
@@ -285,69 +354,131 @@ $roles = obtenerRoles($conn);
         </div>
     </div>
 
-    <!-- Modales para editar y resetear contrasena -->
+    <!-- Modales para editar tecnico (con pestana de cambio de contrasena) -->
     <?php foreach ($tecnicos as $tecnico): ?>
-    <!-- Modal editar -->
     <div class="modal fade" id="editarTecnicoModal<?php echo $tecnico['idTecnico']; ?>" tabindex="-1" aria-hidden="true">
-        <div class="modal-dialog">
+        <div class="modal-dialog modal-lg">
             <div class="modal-content">
-                <div class="modal-header">
-                    <h5 class="modal-title">Editar Tecnico</h5>
+                <div class="modal-header bg-warning">
+                    <h5 class="modal-title"><i class="bi bi-pencil"></i> Editar Tecnico — <?php echo htmlspecialchars($tecnico['Nombre_Tecnico']); ?></h5>
                     <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
                 </div>
                 <div class="modal-body">
-                    <form action="" method="post">
-                        <input type="hidden" name="csrf_token" value="<?php echo htmlspecialchars($_SESSION['csrf_token']); ?>">
-                        <input type="hidden" name="id_tecnico" value="<?php echo $tecnico['idTecnico']; ?>">
-                        <div class="mb-3">
-                            <label class="form-label">Nombre (*)</label>
-                            <input type="text" class="form-control" name="nombre_tecnico" value="<?php echo htmlspecialchars($tecnico['Nombre_Tecnico']); ?>" required>
+                    <ul class="nav nav-tabs mb-3" role="tablist">
+                        <li class="nav-item" role="presentation">
+                            <button class="nav-link active" data-bs-toggle="tab" data-bs-target="#datosTecnicoTab<?php echo $tecnico['idTecnico']; ?>" type="button">
+                                <i class="bi bi-person"></i> Datos
+                            </button>
+                        </li>
+                        <li class="nav-item" role="presentation">
+                            <button class="nav-link" data-bs-toggle="tab" data-bs-target="#passTab<?php echo $tecnico['idTecnico']; ?>" type="button">
+                                <i class="bi bi-key"></i> Contrasena
+                            </button>
+                        </li>
+                        <?php if ($isAdmin && $tecnico['Rol_idRol'] != 1): ?>
+                        <li class="nav-item" role="presentation">
+                            <button class="nav-link" data-bs-toggle="tab" data-bs-target="#permisosTab<?php echo $tecnico['idTecnico']; ?>" type="button">
+                                <i class="bi bi-shield-lock"></i> Permisos
+                            </button>
+                        </li>
+                        <?php endif; ?>
+                    </ul>
+                    <div class="tab-content">
+                        <!-- Tab datos -->
+                        <div class="tab-pane fade show active" id="datosTecnicoTab<?php echo $tecnico['idTecnico']; ?>">
+                            <form action="" method="post">
+                                <input type="hidden" name="csrf_token" value="<?php echo htmlspecialchars($_SESSION['csrf_token']); ?>">
+                                <input type="hidden" name="id_tecnico" value="<?php echo $tecnico['idTecnico']; ?>">
+                                <div class="mb-3">
+                                    <label class="form-label">Nombre (*)</label>
+                                    <input type="text" class="form-control" name="nombre_tecnico" value="<?php echo htmlspecialchars($tecnico['Nombre_Tecnico']); ?>" required>
+                                </div>
+                                <div class="mb-3">
+                                    <label class="form-label">Correo (*)</label>
+                                    <input type="email" class="form-control" name="correo" value="<?php echo htmlspecialchars($tecnico['Correo']); ?>" required>
+                                </div>
+                                <div class="mb-3">
+                                    <label class="form-label">Rol (*)</label>
+                                    <select class="form-select" name="rol_id" required>
+                                        <?php foreach ($roles as $rol): ?>
+                                        <option value="<?php echo $rol['idRol']; ?>" <?php echo ($rol['idRol'] == $tecnico['Rol_idRol']) ? 'selected' : ''; ?>>
+                                            <?php echo htmlspecialchars($rol['Nombre_Rol']); ?>
+                                        </option>
+                                        <?php endforeach; ?>
+                                    </select>
+                                </div>
+                                <button type="submit" name="actualizar_tecnico" class="btn btn-primary">Actualizar</button>
+                            </form>
                         </div>
-                        <div class="mb-3">
-                            <label class="form-label">Correo (*)</label>
-                            <input type="email" class="form-control" name="correo" value="<?php echo htmlspecialchars($tecnico['Correo']); ?>" required>
+                        <!-- Tab cambiar contrasena -->
+                        <div class="tab-pane fade" id="passTab<?php echo $tecnico['idTecnico']; ?>">
+                            <form action="" method="post">
+                                <input type="hidden" name="csrf_token" value="<?php echo htmlspecialchars($_SESSION['csrf_token']); ?>">
+                                <input type="hidden" name="id_tecnico" value="<?php echo $tecnico['idTecnico']; ?>">
+                                <div class="mb-3">
+                                    <label class="form-label">Nueva Contrasena (*)</label>
+                                    <input type="password" class="form-control" name="nueva_contrasena" required>
+                                </div>
+                                <div class="mb-3">
+                                    <label class="form-label">Confirmar Contrasena (*)</label>
+                                    <input type="password" class="form-control" name="confirmar_contrasena" required>
+                                </div>
+                                <button type="submit" name="restablecer_contrasena" class="btn btn-warning"><i class="bi bi-key"></i> Cambiar Contrasena</button>
+                            </form>
                         </div>
-                        <div class="mb-3">
-                            <label class="form-label">Rol (*)</label>
-                            <select class="form-select" name="rol_id" required>
-                                <?php foreach ($roles as $rol): ?>
-                                <option value="<?php echo $rol['idRol']; ?>" <?php echo ($rol['idRol'] == $tecnico['Rol_idRol']) ? 'selected' : ''; ?>>
-                                    <?php echo htmlspecialchars($rol['Nombre_Rol']); ?>
-                                </option>
-                                <?php endforeach; ?>
-                            </select>
+                        <!-- Tab permisos (solo admin, solo para tecnicos no-admin) -->
+                        <?php if ($isAdmin && $tecnico['Rol_idRol'] != 1):
+                            $permisosDelTecnico = $permisosActuales[$tecnico['idTecnico']] ?? [];
+                        ?>
+                        <div class="tab-pane fade" id="permisosTab<?php echo $tecnico['idTecnico']; ?>">
+                            <form action="" method="post">
+                                <input type="hidden" name="csrf_token" value="<?php echo htmlspecialchars($_SESSION['csrf_token']); ?>">
+                                <input type="hidden" name="tecnico_id" value="<?php echo $tecnico['idTecnico']; ?>">
+                                <table class="table table-bordered table-hover align-middle mb-3" style="font-size:0.9rem;">
+                                    <thead class="table-dark">
+                                        <tr>
+                                            <th style="width:40px;" class="text-center">Acceso</th>
+                                            <th>Modulo</th>
+                                            <th>Descripcion</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody>
+                                        <?php foreach ($modulosDisponibles as $clave => $info):
+                                            $activo = in_array($clave, $permisosDelTecnico);
+                                        ?>
+                                        <tr class="<?php echo $activo ? 'table-success' : ''; ?>">
+                                            <td class="text-center">
+                                                <div class="form-check d-flex justify-content-center m-0">
+                                                    <input class="form-check-input perm-check-<?php echo $tecnico['idTecnico']; ?>" type="checkbox"
+                                                        name="modulos[]"
+                                                        value="<?php echo $clave; ?>"
+                                                        id="mod_<?php echo $clave . '_' . $tecnico['idTecnico']; ?>"
+                                                        <?php echo $activo ? 'checked' : ''; ?>
+                                                        onchange="this.closest('tr').className = this.checked ? 'table-success' : ''">
+                                                </div>
+                                            </td>
+                                            <td class="fw-semibold">
+                                                <i class="bi <?php echo $info['icono']; ?> me-1"></i>
+                                                <?php echo htmlspecialchars($info['nombre']); ?>
+                                            </td>
+                                            <td class="text-muted small"><?php echo htmlspecialchars($info['descripcion']); ?></td>
+                                        </tr>
+                                        <?php endforeach; ?>
+                                    </tbody>
+                                </table>
+                                <div class="d-flex gap-2">
+                                    <button type="submit" name="guardar_permisos" class="btn btn-primary">
+                                        <i class="bi bi-floppy"></i> Guardar Permisos
+                                    </button>
+                                    <button type="button" class="btn btn-outline-secondary"
+                                        onclick="document.querySelectorAll('.perm-check-<?php echo $tecnico['idTecnico']; ?>').forEach(c=>{c.checked=false;c.closest('tr').className=''})">
+                                        Quitar todos
+                                    </button>
+                                </div>
+                            </form>
                         </div>
-                        <button type="submit" name="actualizar_tecnico" class="btn btn-primary">Actualizar</button>
-                    </form>
-                </div>
-            </div>
-        </div>
-    </div>
-    
-    <!-- Modal restablecer contrasena -->
-    <div class="modal fade" id="resetPassModal<?php echo $tecnico['idTecnico']; ?>" tabindex="-1" aria-hidden="true">
-        <div class="modal-dialog">
-            <div class="modal-content">
-                <div class="modal-header">
-                    <h5 class="modal-title">Restablecer Contrasena</h5>
-                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
-                </div>
-                <div class="modal-body">
-                    <p><strong>Tecnico:</strong> <?php echo htmlspecialchars($tecnico['Nombre_Tecnico']); ?></p>
-                    <p><strong>Correo:</strong> <?php echo htmlspecialchars($tecnico['Correo']); ?></p>
-                    <form action="" method="post">
-                        <input type="hidden" name="csrf_token" value="<?php echo htmlspecialchars($_SESSION['csrf_token']); ?>">
-                        <input type="hidden" name="id_tecnico" value="<?php echo $tecnico['idTecnico']; ?>">
-                        <div class="mb-3">
-                            <label class="form-label">Nueva Contrasena (*)</label>
-                            <input type="password" class="form-control" name="nueva_contrasena" required>
-                        </div>
-                        <div class="mb-3">
-                            <label class="form-label">Confirmar Contrasena (*)</label>
-                            <input type="password" class="form-control" name="confirmar_contrasena" required>
-                        </div>
-                        <button type="submit" name="restablecer_contrasena" class="btn btn-warning">Restablecer Contrasena</button>
-                    </form>
+                        <?php endif; ?>
+                    </div>
                 </div>
             </div>
         </div>

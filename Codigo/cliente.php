@@ -6,10 +6,11 @@
 include('auth.php');
 include("conexion.php");
 
-if (!isset($_SESSION['rol_nombre']) || $_SESSION['rol_nombre'] !== 'Administrador') {
+if (!tienePermiso('clientes')) {
     header('Location: index.php');
     exit();
 }
+$isAdmin = isset($_SESSION['rol_nombre']) && $_SESSION['rol_nombre'] === 'Administrador';
 
 // CSRF token
 if (empty($_SESSION['csrf_token'])) {
@@ -152,40 +153,44 @@ $clientes = obtenerClientes($conn);
     <?php include 'navbar.php'; ?>
     <?php echo $mensaje; ?>
 
-    <div class="container mt-4">
-        <div class="card">
-            <div class="card-header d-flex justify-content-between align-items-center">
-                <h2>Listar Clientes</h2>
+    <div class="container-fluid px-4 mt-4">
+        <div class="card shadow-sm">
+            <div class="card-header d-flex justify-content-between align-items-center py-3">
+                <h4 class="mb-0"><i class="bi bi-people"></i> Listar Clientes</h4>
                 <button type="button" class="btn btn-primary" data-bs-toggle="modal" data-bs-target="#crearClienteModal">
-                    Crear Cliente
+                    <i class="bi bi-plus-lg"></i> Crear Cliente
                 </button>
             </div>
-            <div class="card-body">
+            <div class="card-body p-0">
                 <div class="table-responsive">
-                    <table class="table table-striped">
-                        <thead>
+                    <table class="table table-striped table-hover table-bordered align-middle mb-0" style="font-size:0.9rem;">
+                        <thead class="table-dark">
                             <tr>
-                                <th>ID</th>
+                                <th class="text-center" style="width:50px;">ID</th>
                                 <th>Nombres</th>
                                 <th>Apellidos</th>
                                 <th>Telefono</th>
                                 <th>Direccion</th>
-                                <th>Acciones</th>
+                                <th class="text-center" style="width:130px;">Acciones</th>
                             </tr>
                         </thead>
                         <tbody id="clientesTablaBody">
                             <?php foreach ($clientes as $cliente): ?>
                             <tr>
-                                <td><?php echo $cliente['idCliente']; ?></td>
+                                <td class="text-center fw-bold"><?php echo $cliente['idCliente']; ?></td>
                                 <td><?php echo htmlspecialchars($cliente['Primer_Nombre']); ?></td>
                                 <td><?php echo htmlspecialchars($cliente['Primer_Apellido']); ?></td>
                                 <td><?php echo htmlspecialchars($cliente['Telefono']); ?></td>
                                 <td><?php echo htmlspecialchars($cliente['Direccion']); ?></td>
-                                <td>
-                                    <button type="button" class="btn btn-sm btn-warning" data-bs-toggle="modal" data-bs-target="#editarClienteModal<?php echo $cliente['idCliente']; ?>">
-                                        Editar
-                                    </button>
-                                    <a href="?eliminar=<?php echo $cliente['idCliente']; ?>" class="btn btn-sm btn-danger" onclick="return confirm('¿Estas seguro de que quieres eliminar este cliente?')">Eliminar</a>
+                                <td class="text-center">
+                                    <div class="d-flex gap-1 justify-content-center">
+                                        <button type="button" class="btn btn-sm btn-warning" data-bs-toggle="modal" data-bs-target="#editarClienteModal<?php echo $cliente['idCliente']; ?>" title="Editar">
+                                            <i class="bi bi-pencil"></i>
+                                        </button>
+                                        <a href="?eliminar=<?php echo $cliente['idCliente']; ?>" class="btn btn-sm btn-danger" onclick="return confirm('¿Estas seguro de que quieres eliminar este cliente?')" title="Eliminar">
+                                            <i class="bi bi-trash"></i>
+                                        </a>
+                                    </div>
                                 </td>
                             </tr>
                             <?php endforeach; ?>
