@@ -81,10 +81,12 @@ if (isset($_POST['cambiar_contrasena'])) {
         // HU07 Escenario 3: Verificar contraseña actual
         if ($storedPassword !== $contrasena_actual && !password_verify($contrasena_actual, $storedPassword)) {
             $mensaje = "<div class='alert alert-danger'>La contraseña actual es incorrecta</div>";
-        } elseif ($contrasena_nueva !== $contrasena_confirmar) {
-            $mensaje = "<div class='alert alert-danger'>Las contraseñas nuevas no coinciden</div>";
         } elseif (empty($contrasena_nueva)) {
             $mensaje = "<div class='alert alert-danger'>La nueva contraseña no puede estar vacia</div>";
+        } elseif (strlen($contrasena_nueva) < 8) {
+            $mensaje = "<div class='alert alert-danger'>La nueva contraseña debe tener un minimo de 8 caracteres</div>";
+        } elseif ($contrasena_nueva !== $contrasena_confirmar) {
+            $mensaje = "<div class='alert alert-danger'>Las contraseñas nuevas no coinciden</div>";
         } else {
             // HU07 Escenario 2: Cambio exitoso
             $stmt = $conn->prepare("UPDATE Tecnico SET `Contraseña`=? WHERE idTecnico=?");
@@ -152,8 +154,8 @@ if (isset($_POST['cambiar_contrasena'])) {
                                 <input type="password" class="form-control" id="contrasena_actual" name="contrasena_actual" required>
                             </div>
                             <div class="mb-3">
-                                <label for="contrasena_nueva" class="form-label">Nueva Contraseña (*)</label>
-                                <input type="password" class="form-control" id="contrasena_nueva" name="contrasena_nueva" required>
+                                <label for="contrasena_nueva" class="form-label">Nueva Contraseña (*) <small class="text-muted">(Mínimo 8 caracteres)</small></label>
+                                <input type="password" class="form-control" id="contrasena_nueva" name="contrasena_nueva" minlength="8" required>
                             </div>
                             <div class="mb-3">
                                 <label for="contrasena_confirmar" class="form-label">Confirmar Nueva Contraseña (*)</label>

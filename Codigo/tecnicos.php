@@ -135,6 +135,8 @@ if (isset($_POST['restablecer_contrasena'])) {
 
         if (empty($nueva_contrasena)) {
             $_SESSION['mensaje'] = "<div class='alert alert-danger'>La nueva contrasena es obligatoria.</div>";
+        } elseif (strlen($nueva_contrasena) < 8) {
+            $_SESSION['mensaje'] = "<div class='alert alert-danger'>La nueva contrasena debe tener un minimo de 8 caracteres.</div>";
         } elseif ($nueva_contrasena !== $confirmar_contrasena) {
             $_SESSION['mensaje'] = "<div class='alert alert-danger'>Las contrasenas no coinciden.</div>";
         } else {
@@ -416,8 +418,8 @@ $roles = obtenerRoles($conn);
                                 <input type="hidden" name="csrf_token" value="<?php echo htmlspecialchars($_SESSION['csrf_token']); ?>">
                                 <input type="hidden" name="id_tecnico" value="<?php echo $tecnico['idTecnico']; ?>">
                                 <div class="mb-3">
-                                    <label class="form-label">Nueva Contrasena (*)</label>
-                                    <input type="password" class="form-control" name="nueva_contrasena" required>
+                                    <label class="form-label">Nueva Contrasena (*) <small class="text-muted">(Minimo 8 caracteres)</small></label>
+                                    <input type="password" class="form-control" name="nueva_contrasena" minlength="8" required>
                                 </div>
                                 <div class="mb-3">
                                     <label class="form-label">Confirmar Contrasena (*)</label>

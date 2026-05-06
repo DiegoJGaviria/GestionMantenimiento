@@ -1,15 +1,6 @@
--- =============================================================
--- ESQUEMA COMPLETO V2: Sistema de Arreglo de Computadores
--- Esquema centrado en la gestión de arreglos, tipos de arreglo y reingresos
--- =============================================================
-
 DROP DATABASE IF EXISTS `sistema_arreglo_computadores`;
 CREATE DATABASE `sistema_arreglo_computadores`;
 USE `sistema_arreglo_computadores`;
-
--- =============================================================
--- TABLAS BASE
--- =============================================================
 
 -- Tabla Rol
 CREATE TABLE Rol (
@@ -61,20 +52,14 @@ CREATE TABLE Cliente (
   PRIMARY KEY (idCliente)
 );
 
--- =============================================================
--- TABLA TIPO_ARREGLO
--- =============================================================
-
+-- TABLA TIPO ARREGLO
 CREATE TABLE Tipo_Arreglo (
   id INT NOT NULL AUTO_INCREMENT,
   nombre VARCHAR(100) NOT NULL,
   PRIMARY KEY (id)
 );
 
--- =============================================================
 -- TABLA ARREGLO
--- =============================================================
-
 CREATE TABLE Arreglo (
   idArreglo INT NOT NULL AUTO_INCREMENT,
   Tipo_Dispositivo_idTipo INT NOT NULL,
@@ -97,10 +82,7 @@ CREATE TABLE Arreglo (
   CONSTRAINT fk_Arreglo_Estado FOREIGN KEY (Estado_idEstado) REFERENCES Estado(idEstado)
 );
 
--- =============================================================
--- TABLA REINGRESO_ARREGLO
--- =============================================================
-
+-- TABLA REINGRESO
 CREATE TABLE Reingreso_Arreglo (
   idReingreso INT NOT NULL AUTO_INCREMENT,
   Arreglo_idArreglo INT NOT NULL,
@@ -121,10 +103,6 @@ CREATE TABLE Detalle_Arreglo (
   CONSTRAINT fk_DetalleArr_Arreglo FOREIGN KEY (Arreglo_idArreglo) REFERENCES Arreglo(idArreglo) ON DELETE CASCADE 
 );
 
--- =============================================================
--- INDICES PARA OPTIMIZACION
--- =============================================================
-
 CREATE INDEX idx_arreglo_estado ON Arreglo(Estado_idEstado);
 CREATE INDEX idx_arreglo_tecnico ON Arreglo(Tecnico_idTecnico);
 CREATE INDEX idx_reingreso_arreglo ON Reingreso_Arreglo(Arreglo_idArreglo);
@@ -138,27 +116,19 @@ CREATE TABLE Permiso_Modulo (
   CONSTRAINT fk_Permiso_Tecnico FOREIGN KEY (Tecnico_idTecnico) REFERENCES Tecnico(idTecnico) ON DELETE CASCADE
 );
 
--- =============================================================
--- DATOS DE PRUEBA
--- =============================================================
-
--- Roles
 INSERT INTO Rol (idRol, Nombre_Rol) VALUES
 (1, 'Administrador'),
 (2, 'Tecnico');
 
--- Marcas
 INSERT INTO Marca (idMarca, Nombre_Marca) VALUES
 (1, 'Dell'), (2, 'HP'), (3, 'Lenovo'), (4, 'Acer'), (5, 'Apple'), 
 (6, 'Asus'), (7, 'Samsung'), (8, 'Toshiba'), (9, 'Sony'), (10, 'MSI');
 
--- Estados
 INSERT INTO Estado (idEstado, Nombre_Estado) VALUES
 (1, 'En reparacion'),
 (2, 'Finalizado'),
 (3, 'Entregado');
 
--- Tipos de Dispositivo
 INSERT INTO Tipo_Dispositivo (idTipoDispositivo, Nombre_Tipo, Descripcion) VALUES
 (1, 'Laptop', 'Computador portatil'),
 (2, 'PC de Escritorio', 'Computador de escritorio'),
@@ -167,7 +137,6 @@ INSERT INTO Tipo_Dispositivo (idTipoDispositivo, Nombre_Tipo, Descripcion) VALUE
 (5, 'Monitor', 'Pantalla de computador'),
 (6, 'Impresora', 'Impresora o multifuncional');
 
--- Tecnicos
 INSERT INTO Tecnico (idTecnico, Nombre_Tecnico, Correo, Contraseña, Rol_idRol) VALUES
 (1, 'Juan Carlos Perez Lopez', 'juan.perez@gmail.com', '12345678', 1),
 (2, 'Ana Maria Gomez Hernandez', 'ana.gomez@gmail.com', 'abcdef', 2),
@@ -175,7 +144,6 @@ INSERT INTO Tecnico (idTecnico, Nombre_Tecnico, Correo, Contraseña, Rol_idRol) 
 (4, 'Jesus Yeison Pencue Talaga', 'yeison@gmail.com', '12345678', 2),
 (5, 'Diego Jose Gaviria Ramirez', 'diego@gmail.com', '12345678', 1);
 
--- Clientes
 INSERT INTO Cliente (idCliente, Primer_Nombre, Primer_Apellido, Telefono, Direccion) VALUES
 (1, 'Luis', 'Martinez', '123456789', 'Calle 123'),
 (2, 'Carla', 'Ramirez', '987654321', 'Avenida 456'),
@@ -183,14 +151,11 @@ INSERT INTO Cliente (idCliente, Primer_Nombre, Primer_Apellido, Telefono, Direcc
 (4, 'Ana', 'Salas', '998877665', 'Calle Sol 20'),
 (5, 'Maria', 'Garcia', '223344556', 'Calle Estrella 30');
 
--- Tipos de Arreglo
 INSERT INTO Tipo_Arreglo (id, nombre) VALUES
 (1, 'Reparación'),
 (2, 'Mantenimiento Preventivo'),
 (3, 'Mantenimiento Correctivo');
 
-
--- Arreglos de prueba
 INSERT INTO Arreglo 
 (idArreglo, Tipo_Dispositivo_idTipo, tipo_arreglo_id, Nombre_Arreglo, Descripcion_Cliente, Valor_Pago, Fecha_Recibido, Fecha_Entrega, Marca_idMarca, Tecnico_idTecnico, Estado_idEstado) VALUES
 (1, 1, 1, 'Cambio Pantalla', 'Pantalla rota', 120000, '2024-11-01', '2024-11-05', 1, 2, 3),
@@ -199,7 +164,6 @@ INSERT INTO Arreglo
 (4, 1, 1, 'Cambio de Bateria', 'No enciende sin cargador', 65000, '2024-11-10', NULL, 5, 2, 3),
 (5, 2, 2, 'Limpieza y Mantenimiento', 'Muy lento y se calienta', 50000, '2024-11-12', NULL, 4, 3, 3);
 
--- Detalle Arreglo (relacion con clientes)
 INSERT INTO Detalle_Arreglo (Cliente_idCliente, Arreglo_idArreglo) VALUES
 (1, 1), (1, 4),
 (2, 2), (2, 5),
